@@ -34,41 +34,83 @@ func main() {
 
 func handleClient(conn net.Conn) {
 
-	sp, err := ReadSystemPacket(conn)
-	if err != nil {
-		fmt.Println("Error reading system packet")
-		return
+	for i := 0; i < 2; i++ {
+		//read two system packets from the remote
+		sp, err := ReadSystemPacket(conn)
+		if err != nil {
+			fmt.Println("Error reading system packet: " + err.Error())
+			return
+		}
+		PrintSystemPacket(sp)
 	}
-	var port = int(binary.LittleEndian.Uint16(sp.data))
-	fmt.Println("Received System Packet.  GroupID: " + strconv.Itoa(sp.groupid) + "; length: " + strconv.Itoa(sp.length) + "; port:" + strconv.Itoa(port))
+	// write the mixer handshake response
+	WriteMixerHandshakeResponse1(conn)
+	WriteMixerHandshakeResponse2(conn)
+	for {
+		sp1, err1 := ReadSystemPacket(conn)
+		if err1 != nil {
+			fmt.Println("Error reading system packet: " + err1.Error())
+			return
+		} else {
+			PrintSystemPacket(sp1)
+		}
 
-	var response = []byte{0x7f, 0x00, 0x02, 0x00, 0x00, 0xc0, 0x7f, 0x01, 0x0c, 0x00, 0x03, 0x01, 0x5f, 0x01, 0xd1, 0x11, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00} // this seems to be the mixer's response after the app sends a system packet
-	_, err2 := conn.Write(response)
-	if err2 != nil {
-		fmt.Println("Error writing to connection")
 	}
-	fmt.Println("Wrote mixer response")
+
+}
+func WriteMixerHandshakeResponse1(conn net.Conn) {
+	response, err := hex.DecodeString("00c0")
+	if err != nil {
+	}
+	sp := SystemPacket{
+		groupid: 0,
+		data:    response,
+		length:  len(response)}
+	WriteSystemPacket(sp, conn)
+}
+func WriteMixerHandshakeResponse2(conn net.Conn) {
+	response, err := hex.DecodeString("03015f01d111000000000000")
+	if err != nil {
+	}
+	sp := SystemPacket{
+		groupid: 01,
+		data:    response,
+		length:  len(response)}
+	WriteSystemPacket(sp, conn)
+}
+
+func PrintSystemPacket(sp SystemPacket) {
+	if sp.groupid == 0 {
+		var port = int(binary.LittleEndian.Uint16(sp.data))
+		fmt.Println("Received System Packet.  GroupID: " + strconv.Itoa(sp.groupid) + "; length: " + strconv.Itoa(sp.length) + "; port:" + strconv.Itoa(port))
+	} else if sp.groupid == 4 {
+		fmt.Println("Received heartbeat packet")
+	} else {
+		fmt.Println("Received System Packet.  GroupID: " + strconv.Itoa(sp.groupid) + "; length: " + strconv.Itoa(sp.length) + "; data:" + hex.EncodeToString(sp.data))
+	}
 
 }
 
 func ReadSystemPacket(conn net.Conn) (sp SystemPacket, err error) {
-	var buf1 [2]byte
+	var buf1 [1]byte
 
-	_, err1 := conn.Read(buf1[0:])
+	n, err1 := conn.Read(buf1[0:])
 	if err1 != nil {
-		fmt.Println("Error reading connection buffer")
+		return sp, errors.New("Error reading connection buffer, read " + strconv.Itoa(n) + " bytes read")
 	}
 	if buf1[0] != 0x7f {
 		return sp, errors.New("Expected header 0x07 for system packet; got: " + hex.EncodeToString(buf1[:]))
 	}
 
-	var buf2 [2]byte
+	var buf2 [3]byte
 	_, err2 := conn.Read(buf2[0:])
 	if err2 != nil {
-		return sp, errors.New("Error reading packet data length")
+		return sp, errors.New("Error reading packet group or data length")
 	}
-	var len = int(buf2[0])
-	fmt.Println("length: " + strconv.Itoa(len))
+	var group = int(buf2[0])
+	var len = int(buf2[1])
+	fmt.Println("groupid: " + strconv.Itoa(group))
+	fmt.Println("len: " + strconv.Itoa(len))
 
 	buf3 := make([]byte, len)
 	_, err3 := conn.Read(buf3[0:])
@@ -77,6 +119,22 @@ func ReadSystemPacket(conn net.Conn) (sp SystemPacket, err error) {
 	}
 
 	return SystemPacket{
-		length: len,
-		data:   buf3}, nil
+		groupid: group,
+		length:  len,
+		data:    buf3}, nil
+}
+
+func WriteSystemPacket(sp SystemPacket, conn net.Conn) {
+	var len = 4 + len(sp.data)
+	outbuf := make([]byte, len)
+	outbuf[0] = 0x7f
+	outbuf[1] = byte(sp.groupid)
+	outbuf[2] = byte(sp.length)
+	outbuf[3] = 0
+	copy(outbuf[4:], sp.data)
+	_, err := conn.Write(outbuf)
+	if err != nil {
+		fmt.Println("Error writing to connection")
+	}
+	fmt.Println("Wrote System packet: " + hex.EncodeToString(outbuf))
 }
