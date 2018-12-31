@@ -11,3 +11,7 @@ Additionally, it will provide a real-time display for the following:
 *  Connected remote control clients
 *  Remote control client mix assignments
 *  Log of changes made
+
+# Resources:
+* Dealing with Big / Little Endian in Go: https://golang.org/src/encoding/binary/example_test.go
+* Networking: https://appliedgo.net/networking/

@@ -80,9 +80,9 @@ func handleClient(conn net.Conn) {
 
 func WriteMixerHandshakeResponse(conn net.Conn) {
 	var packets [2]SystemPacket
-	UDPPort := uint32(49152)
-	response := make([]byte, 4)
-	binary.LittleEndian.PutUint32(response, UDPPort)
+	UDPPort := uint16(49152)
+	response := make([]byte, 2)
+	binary.LittleEndian.PutUint16(response, UDPPort)
 	//response, _ := hex.DecodeString("00c0") // this tells the remote client the mixer's UDP listening port: 49152
 	packets[0] = SystemPacket{
 		groupid: 0,
