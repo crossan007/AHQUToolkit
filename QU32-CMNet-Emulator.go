@@ -44,8 +44,7 @@ func handleClient(conn net.Conn) {
 		PrintSystemPacket(sp)
 	}
 	// write the mixer handshake response
-	WriteMixerHandshakeUDPListeningPort(conn)
-	WriteMixerHandshakeResponse2(conn)
+	WriteMixerHandshakeResponse(conn)
 	for {
 		sp1, err1 := ReadSystemPacket(conn)
 		if err1 != nil {
@@ -58,25 +57,23 @@ func handleClient(conn net.Conn) {
 	}
 
 }
-func WriteMixerHandshakeUDPListeningPort(conn net.Conn) {
-	response, err := hex.DecodeString("00c0") // this tells the remote client the mixer's UDP listening port: 49152
-	if err != nil {
-	}
-	sp := SystemPacket{
+
+func WriteMixerHandshakeResponse(conn net.Conn) {
+	var packets [2]SystemPacket
+	response, _ := hex.DecodeString("00c0") // this tells the remote client the mixer's UDP listening port: 49152
+
+	packets[0] = SystemPacket{
 		groupid: 0,
 		data:    response,
 		length:  len(response)}
-	WriteSystemPacket(sp, conn)
-}
-func WriteMixerHandshakeResponse2(conn net.Conn) {
-	response, err := hex.DecodeString("03015f01d111000000000000")
-	if err != nil {
-	}
-	sp := SystemPacket{
+
+	response2, _ := hex.DecodeString("03015f01d111000000000000")
+
+	packets[1] = SystemPacket{
 		groupid: 01,
-		data:    response,
-		length:  len(response)}
-	WriteSystemPacket(sp, conn)
+		data:    response2,
+		length:  len(response2)}
+	WriteSystemPacket(packets[:], conn)
 }
 
 func PrintSystemPacket(sp SystemPacket) {
@@ -124,7 +121,20 @@ func ReadSystemPacket(conn net.Conn) (sp SystemPacket, err error) {
 		data:    buf3}, nil
 }
 
-func WriteSystemPacket(sp SystemPacket, conn net.Conn) {
+func WriteSystemPacket(sp []SystemPacket, conn net.Conn) {
+	var outbuf []byte
+	for _, onepacket := range sp {
+		packetbytes := SystemPacketToByteArray(onepacket)
+		outbuf = append(outbuf, packetbytes...)
+	}
+	_, err := conn.Write(outbuf)
+	if err != nil {
+		fmt.Println("Error writing to connection")
+	}
+	fmt.Println("Wrote System packet: " + hex.EncodeToString(outbuf))
+}
+
+func SystemPacketToByteArray(sp SystemPacket) (bytes []byte) {
 	var len = 4 + len(sp.data)
 	outbuf := make([]byte, len)
 	outbuf[0] = 0x7f
@@ -132,9 +142,5 @@ func WriteSystemPacket(sp SystemPacket, conn net.Conn) {
 	outbuf[2] = byte(sp.length)
 	outbuf[3] = 0
 	copy(outbuf[4:], sp.data)
-	_, err := conn.Write(outbuf)
-	if err != nil {
-		fmt.Println("Error writing to connection")
-	}
-	fmt.Println("Wrote System packet: " + hex.EncodeToString(outbuf))
+	return outbuf
 }
