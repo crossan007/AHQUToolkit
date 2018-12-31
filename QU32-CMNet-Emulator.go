@@ -11,7 +11,6 @@ import (
 
 type SystemPacket struct {
 	groupid int
-	length  int
 	data    []byte
 }
 
@@ -22,7 +21,7 @@ func (sp SystemPacket) String() string {
 	} else if sp.groupid == 4 {
 		return "Received heartbeat packet"
 	} else {
-		return fmt.Sprintf("Received System Packet.  GroupID: %d; length: %d; data:%s", sp.groupid, sp.length, sp.data)
+		return fmt.Sprintf("Received System Packet.  GroupID: %d; length: %d; data:%s", sp.groupid, len(sp.data), sp.data)
 	}
 }
 
@@ -64,8 +63,10 @@ func handleClient(conn net.Conn) {
 		fmt.Println(sp)
 	}
 	// write the mixer handshake response
-	WriteMixerHandshakeResponse(conn)
-	for {
+	WriteSystemPacket(GetUDPPortSystemPacket(41952), conn)
+	response1, _ := hex.DecodeString("03015f01d111000000000000")
+	WriteSystemPacket(SystemPacket{groupid: 01, data: response1}, conn)
+	for i := 0; i < 1; i++ {
 		sp1, err1 := ReadSystemPacket(conn)
 		if err1 != nil {
 			fmt.Println("Error reading system packet: " + err1.Error())
@@ -73,29 +74,52 @@ func handleClient(conn net.Conn) {
 		} else {
 			fmt.Println(sp1)
 		}
-
 	}
+	response2, _ := hex.DecodeString("13000000ffffffffffff9f0f0000000000000000000000000000000000e003c0ffffff7f")
+	WriteSystemPacket(SystemPacket{groupid: 04, data: response2}, conn)
 
+	response3, _ := hex.DecodeString("15000000fac1230604000028d1041c000000000000000000000000000000000000000000")
+	WriteSystemPacket(SystemPacket{groupid: 04, data: response3}, conn)
+
+	response4, _ := hex.DecodeString("02007f0402000f00")
+	WriteSystemPacket(SystemPacket{groupid: 04, data: response4}, conn)
+
+	response5, _ := hex.DecodeString("07007f04020006007f0404001b640000") //87
+	WriteSystemPacket(SystemPacket{groupid: 04, data: response5}, conn)
+
+	response5b, _ := hex.DecodeString("1a640000")
+	WriteSystemPacket(SystemPacket{groupid: 04, data: response5b}, conn)
+
+	response6, _ := hex.DecodeString("19640000")
+	WriteSystemPacket(SystemPacket{groupid: 04, data: response6}, conn)
+
+	response7, _ := hex.DecodeString("1100")
+	WriteSystemPacket(SystemPacket{groupid: 04, data: response7}, conn)
+
+	response8, _ := hex.DecodeString("12007f0402001000")
+	WriteSystemPacket(SystemPacket{groupid: 04, data: response8}, conn)
+
+	for i := 0; i < 10; i++ {
+		sp1, err1 := ReadSystemPacket(conn)
+		if err1 != nil {
+			fmt.Println("Error reading system packet: " + err1.Error())
+			return
+		} else {
+			fmt.Println(sp1)
+		}
+	}
 }
 
-func WriteMixerHandshakeResponse(conn net.Conn) {
-	var packets [2]SystemPacket
-	UDPPort := uint16(49152)
+func GetUDPPortSystemPacket(portNumber int) (sp SystemPacket) {
+
+	UDPPort := uint16(portNumber)
 	response := make([]byte, 2)
 	binary.LittleEndian.PutUint16(response, UDPPort)
 	//response, _ := hex.DecodeString("00c0") // this tells the remote client the mixer's UDP listening port: 49152
-	packets[0] = SystemPacket{
+	packet := SystemPacket{
 		groupid: 0,
-		data:    response,
-		length:  len(response)}
-
-	response2, _ := hex.DecodeString("03015f01d111000000000000")
-
-	packets[1] = SystemPacket{
-		groupid: 01,
-		data:    response2,
-		length:  len(response2)}
-	WriteSystemPacket(packets[:], conn)
+		data:    response}
+	return packet
 }
 
 func ReadSystemPacket(conn net.Conn) (sp SystemPacket, err error) {
@@ -127,11 +151,10 @@ func ReadSystemPacket(conn net.Conn) (sp SystemPacket, err error) {
 
 	return SystemPacket{
 		groupid: group,
-		length:  len,
 		data:    buf3}, nil
 }
 
-func WriteSystemPacket(sp []SystemPacket, conn net.Conn) {
+func WriteSystemPackets(sp []SystemPacket, conn net.Conn) {
 	var outbuf []byte
 	for _, onepacket := range sp {
 		packetbytes := SystemPacketToByteArray(onepacket)
@@ -143,13 +166,21 @@ func WriteSystemPacket(sp []SystemPacket, conn net.Conn) {
 	}
 	fmt.Println("Wrote System packet: " + hex.EncodeToString(outbuf))
 }
+func WriteSystemPacket(sp SystemPacket, conn net.Conn) {
+	outbuf := SystemPacketToByteArray(sp)
+	_, err := conn.Write(outbuf)
+	if err != nil {
+		fmt.Println("Error writing to connection")
+	}
+	fmt.Println("Wrote System packet: " + hex.EncodeToString(outbuf))
+}
 
 func SystemPacketToByteArray(sp SystemPacket) (bytes []byte) {
-	var len = 4 + len(sp.data)
-	outbuf := make([]byte, len)
+	var packetByteCount = 4 + len(sp.data)
+	outbuf := make([]byte, packetByteCount)
 	outbuf[0] = 0x7f
 	outbuf[1] = byte(sp.groupid)
-	outbuf[2] = byte(sp.length)
+	outbuf[2] = byte(len(sp.data))
 	outbuf[3] = 0
 	copy(outbuf[4:], sp.data)
 	return outbuf
