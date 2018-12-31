@@ -44,7 +44,7 @@ func handleClient(conn net.Conn) {
 		PrintSystemPacket(sp)
 	}
 	// write the mixer handshake response
-	WriteMixerHandshakeResponse1(conn)
+	WriteMixerHandshakeUDPListeningPort(conn)
 	WriteMixerHandshakeResponse2(conn)
 	for {
 		sp1, err1 := ReadSystemPacket(conn)
@@ -58,8 +58,8 @@ func handleClient(conn net.Conn) {
 	}
 
 }
-func WriteMixerHandshakeResponse1(conn net.Conn) {
-	response, err := hex.DecodeString("00c0")
+func WriteMixerHandshakeUDPListeningPort(conn net.Conn) {
+	response, err := hex.DecodeString("00c0") // this tells the remote client the mixer's UDP listening port: 49152
 	if err != nil {
 	}
 	sp := SystemPacket{
@@ -82,7 +82,7 @@ func WriteMixerHandshakeResponse2(conn net.Conn) {
 func PrintSystemPacket(sp SystemPacket) {
 	if sp.groupid == 0 {
 		var port = int(binary.LittleEndian.Uint16(sp.data))
-		fmt.Println("Received System Packet.  GroupID: " + strconv.Itoa(sp.groupid) + "; length: " + strconv.Itoa(sp.length) + "; port:" + strconv.Itoa(port))
+		fmt.Println("Received remote control UDP listening port:" + strconv.Itoa(port))
 	} else if sp.groupid == 4 {
 		fmt.Println("Received heartbeat packet")
 	} else {
