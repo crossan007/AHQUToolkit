@@ -65,7 +65,7 @@ func ReadSystemPacket(conn net.Conn) (sp SystemPacket, err error) {
 	var buf2 [2]byte
 	_, err2 := conn.Read(buf2[0:])
 	if err2 != nil {
-		fmt.Println("Error reading connection buffer")
+		return sp, errors.New("Error reading packet data length")
 	}
 	var len = int(buf2[0])
 	fmt.Println("length: " + strconv.Itoa(len))
@@ -73,7 +73,7 @@ func ReadSystemPacket(conn net.Conn) (sp SystemPacket, err error) {
 	buf3 := make([]byte, len)
 	_, err3 := conn.Read(buf3[0:])
 	if err3 != nil {
-		fmt.Println("Error reading system packet data")
+		return sp, errors.New("Error reading system packet data")
 	}
 
 	return SystemPacket{
