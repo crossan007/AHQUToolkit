@@ -15,7 +15,7 @@ type SystemPacket struct {
 	data    []byte
 }
 
-func (sp *SystemPacket) String() string {
+func (sp SystemPacket) String() string {
 	if sp.groupid == 0 {
 		var port = int(binary.LittleEndian.Uint16(sp.data))
 		return fmt.Sprintf("Received remote control UDP listening port: %d", port)
