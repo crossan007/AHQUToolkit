@@ -18,11 +18,11 @@ type SystemPacket struct {
 func (sp *SystemPacket) String() string {
 	if sp.groupid == 0 {
 		var port = int(binary.LittleEndian.Uint16(sp.data))
-		return "Received remote control UDP listening port:" + strconv.Itoa(port)
+		return fmt.Sprintf("Received remote control UDP listening port: %d", port)
 	} else if sp.groupid == 4 {
 		return "Received heartbeat packet"
 	} else {
-		return "Received System Packet.  GroupID: " + strconv.Itoa(sp.groupid) + "; length: " + strconv.Itoa(sp.length) + "; data:" + hex.EncodeToString(sp.data)
+		return fmt.Sprintf("Received System Packet.  GroupID: %d; length: %d; data:%s", sp.groupid, sp.length, sp.data)
 	}
 }
 
