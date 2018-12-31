@@ -44,7 +44,16 @@ func main() {
 }
 
 func handleClient(conn net.Conn) {
+	/*
+		When a remote (QU-You; QU-Pad; MixingStationPro) connects, it will:
+		* Send a system packet containing the UDP port on which it's listening
+		* Send a heartbeat packet
 
+		Then, the mixer's response will be
+		* send a system packet with the UDP Port number (49152)
+		* send a system packet with some data; not sure what it means: 03015f01d111000000000000
+
+	*/
 	for i := 0; i < 2; i++ {
 		//read two system packets from the remote
 		sp, err := ReadSystemPacket(conn)
@@ -71,8 +80,10 @@ func handleClient(conn net.Conn) {
 
 func WriteMixerHandshakeResponse(conn net.Conn) {
 	var packets [2]SystemPacket
-	response, _ := hex.DecodeString("00c0") // this tells the remote client the mixer's UDP listening port: 49152
-
+	UDPPort := uint32(49152)
+	response := make([]byte, 4)
+	binary.LittleEndian.PutUint32(response, UDPPort)
+	//response, _ := hex.DecodeString("00c0") // this tells the remote client the mixer's UDP listening port: 49152
 	packets[0] = SystemPacket{
 		groupid: 0,
 		data:    response,
