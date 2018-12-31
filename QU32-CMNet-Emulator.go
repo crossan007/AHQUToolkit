@@ -15,6 +15,17 @@ type SystemPacket struct {
 	data    []byte
 }
 
+func (sp *SystemPacket) String() string {
+	if sp.groupid == 0 {
+		var port = int(binary.LittleEndian.Uint16(sp.data))
+		return "Received remote control UDP listening port:" + strconv.Itoa(port)
+	} else if sp.groupid == 4 {
+		return "Received heartbeat packet"
+	} else {
+		return "Received System Packet.  GroupID: " + strconv.Itoa(sp.groupid) + "; length: " + strconv.Itoa(sp.length) + "; data:" + hex.EncodeToString(sp.data)
+	}
+}
+
 func main() {
 	ln, err := net.Listen("tcp", ":51326")
 	if err != nil {
@@ -41,7 +52,7 @@ func handleClient(conn net.Conn) {
 			fmt.Println("Error reading system packet: " + err.Error())
 			return
 		}
-		PrintSystemPacket(sp)
+		fmt.Println(sp)
 	}
 	// write the mixer handshake response
 	WriteMixerHandshakeResponse(conn)
@@ -51,7 +62,7 @@ func handleClient(conn net.Conn) {
 			fmt.Println("Error reading system packet: " + err1.Error())
 			return
 		} else {
-			PrintSystemPacket(sp1)
+			fmt.Println(sp1)
 		}
 
 	}
@@ -74,18 +85,6 @@ func WriteMixerHandshakeResponse(conn net.Conn) {
 		data:    response2,
 		length:  len(response2)}
 	WriteSystemPacket(packets[:], conn)
-}
-
-func PrintSystemPacket(sp SystemPacket) {
-	if sp.groupid == 0 {
-		var port = int(binary.LittleEndian.Uint16(sp.data))
-		fmt.Println("Received remote control UDP listening port:" + strconv.Itoa(port))
-	} else if sp.groupid == 4 {
-		fmt.Println("Received heartbeat packet")
-	} else {
-		fmt.Println("Received System Packet.  GroupID: " + strconv.Itoa(sp.groupid) + "; length: " + strconv.Itoa(sp.length) + "; data:" + hex.EncodeToString(sp.data))
-	}
-
 }
 
 func ReadSystemPacket(conn net.Conn) (sp SystemPacket, err error) {
