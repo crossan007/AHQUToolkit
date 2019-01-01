@@ -38,7 +38,7 @@ func main() {
 			fmt.Println("Error accepting connection")
 		}
 		fmt.Println("Incoming connection from: " + conn.RemoteAddr().String())
-		handleClient(conn)
+		go handleClient(conn)
 	}
 }
 
@@ -140,9 +140,6 @@ func ReadSystemPacket(conn net.Conn) (sp SystemPacket, err error) {
 	}
 	var group = int(buf2[0])
 	var len = int(buf2[1])
-	fmt.Println("groupid: " + strconv.Itoa(group))
-	fmt.Println("len: " + strconv.Itoa(len))
-
 	buf3 := make([]byte, len)
 	_, err3 := conn.Read(buf3[0:])
 	if err3 != nil {
@@ -164,7 +161,7 @@ func WriteSystemPackets(sp []SystemPacket, conn net.Conn) {
 	if err != nil {
 		fmt.Println("Error writing to connection")
 	}
-	fmt.Println("Wrote System packet: " + hex.EncodeToString(outbuf))
+	//fmt.Println("Wrote System packet: " + hex.EncodeToString(outbuf))
 }
 func WriteSystemPacket(sp SystemPacket, conn net.Conn) {
 	outbuf := SystemPacketToByteArray(sp)
@@ -172,7 +169,7 @@ func WriteSystemPacket(sp SystemPacket, conn net.Conn) {
 	if err != nil {
 		fmt.Println("Error writing to connection")
 	}
-	fmt.Println("Wrote System packet: " + hex.EncodeToString(outbuf))
+	//fmt.Println("Wrote System packet: " + hex.EncodeToString(outbuf))
 }
 
 func SystemPacketToByteArray(sp SystemPacket) (bytes []byte) {
