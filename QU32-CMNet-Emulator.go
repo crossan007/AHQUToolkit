@@ -5,12 +5,13 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"strconv"
 )
 
 type SystemPacket struct {
-	groupid int
+	groupid byte
 	data    []byte
 }
 
@@ -64,8 +65,8 @@ func handleClient(conn net.Conn) {
 	}
 	// write the mixer handshake response
 	WriteSystemPacket(GetUDPPortSystemPacket(49152), conn)
-	response1, _ := hex.DecodeString("03015f01d111000000000000")
-	WriteSystemPacket(SystemPacket{groupid: 01, data: response1}, conn)
+	WriteSystemPacket(CreateSystemPacketFromHexString(0x01, "03015f01d111000000000000"), conn)
+
 	for i := 0; i < 1; i++ {
 		sp1, err1 := ReadSystemPacket(conn)
 		if err1 != nil {
@@ -76,8 +77,37 @@ func handleClient(conn net.Conn) {
 		}
 	}
 
-	WriteSystemPacket(SystemPacket{groupid: 01, data: response1}, conn)
+	WriteSystemPacket(CreateSystemPacketFromHexString(0x01, "03015f01d111000000000000"), conn)
 
+	channelData1, err := ioutil.ReadFile("ChannelData1.bin")
+	check(err)
+	WriteSystemPacket(SystemPacket{groupid: 0x06, data: channelData1}, conn)
+
+	channelData2, err := ioutil.ReadFile("ChannelData2.bin")
+	check(err)
+	WriteSystemPacket(SystemPacket{groupid: 0x22, data: channelData2}, conn)
+
+	WriteSystemPacket(CreateSystemPacketFromHexString(0x0b, "0000FF00"), conn)
+
+	WriteSystemPacket(CreateSystemPacketFromHexString(0x0a, "00000000"), conn)
+
+	WriteSystemPacket(CreateSystemPacketFromHexString(0x22, "0100"), conn)
+	WriteSystemPacket(CreateSystemPacketFromHexString(0x21, "0100"), conn)
+	WriteSystemPacket(CreateSystemPacketFromHexString(0x20, "0100"), conn)
+
+	channelData3, err := ioutil.ReadFile("ChannelData3.bin")
+	check(err)
+	WriteSystemPacket(SystemPacket{groupid: 0x1a, data: channelData3}, conn) //groupid 1a
+
+	channelData4, err := ioutil.ReadFile("ChannelData4.bin")
+	check(err)
+	WriteSystemPacket(SystemPacket{groupid: 0x1b, data: channelData4}, conn) //groupid 1b
+
+	channelData5, err := ioutil.ReadFile("ChannelData5.bin")
+	check(err)
+	WriteSystemPacket(SystemPacket{groupid: 0x18, data: channelData5}, conn) //groupid 1b
+
+	/* I think I was emulating the wrong side of the conversation with this block:
 	WriteSystemPacket(CreateSystemPacketFromHexString(4, "13000000ffffffffffff9f0f0000000000000000000000000000000000e003c0ffffff7f"), conn)
 	WriteSystemPacket(CreateSystemPacketFromHexString(4, "15000000fac1230604000028d1041c000000000000000000000000000000000000000000"), conn)
 	WriteSystemPacket(CreateSystemPacketFromHexString(4, "0700"), conn)
@@ -87,7 +117,7 @@ func handleClient(conn net.Conn) {
 	WriteSystemPacket(CreateSystemPacketFromHexString(4, "19640000"), conn)
 	WriteSystemPacket(CreateSystemPacketFromHexString(4, "1100"), conn)
 	WriteSystemPacket(CreateSystemPacketFromHexString(4, "1200"), conn)
-	WriteSystemPacket(CreateSystemPacketFromHexString(4, "1000"), conn)
+	WriteSystemPacket(CreateSystemPacketFromHexString(4, "1000"), conn)*/
 
 	for i := 0; i < 10; i++ {
 		sp1, err1 := ReadSystemPacket(conn)
@@ -107,12 +137,12 @@ func GetUDPPortSystemPacket(portNumber int) (sp SystemPacket) {
 	binary.LittleEndian.PutUint16(response, UDPPort)
 	//response, _ := hex.DecodeString("00c0") // this tells the remote client the mixer's UDP listening port: 49152
 	packet := SystemPacket{
-		groupid: 0,
+		groupid: 0x00,
 		data:    response}
 	return packet
 }
 
-func CreateSystemPacketFromHexString(groupId int, data string) (sp SystemPacket) {
+func CreateSystemPacketFromHexString(groupId byte, data string) (sp SystemPacket) {
 	byteArray, _ := hex.DecodeString(data)
 	return SystemPacket{groupid: groupId, data: byteArray}
 }
@@ -133,7 +163,7 @@ func ReadSystemPacket(conn net.Conn) (sp SystemPacket, err error) {
 	if err2 != nil {
 		return sp, errors.New("Error reading packet group or data length")
 	}
-	var group = int(buf2[0])
+	var group = buf2[0]
 	var len = int(buf2[1])
 	buf3 := make([]byte, len)
 	_, err3 := conn.Read(buf3[0:])
@@ -176,4 +206,10 @@ func SystemPacketToByteArray(sp SystemPacket) (bytes []byte) {
 	outbuf[3] = 0
 	copy(outbuf[4:], sp.data)
 	return outbuf
+}
+
+func check(e error) {
+	if e != nil {
+		panic(e)
+	}
 }
