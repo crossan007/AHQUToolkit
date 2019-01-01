@@ -1,11 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"net"
 )
 
-func ReceivePackets(conn net.Conn, systempackets chan<- SystemPacket) {
+func ReceivePackets(conn net.Conn, systempackets chan<- SystemPacket, dsppackets chan<- DSPPacket) {
 
 	for {
 		var buf1 [1]byte
@@ -32,7 +31,7 @@ func ReceivePackets(conn net.Conn, systempackets chan<- SystemPacket) {
 				groupid: group,
 				data:    buf3}
 		} else if buf1[0] == 0xf7 {
-			fmt.Println("Received DSP Packet")
+			dsppackets <- DSPPacket{}
 			//return sp, errors.New("Expected header 0x07 for system packet; got: " + hex.EncodeToString(buf1[:]))
 		}
 	}

@@ -49,14 +49,19 @@ func handleClient(conn net.Conn) {
 	*/
 
 	incomingSystemPackets := make(chan SystemPacket)
+	incomingDSPPackets := make(chan DSPPacket)
 	outgoingSystemPackets := make(chan SystemPacket)
-	go ReceivePackets(conn, incomingSystemPackets)
+	go ReceivePackets(conn, incomingSystemPackets, incomingDSPPackets)
 	go SendPackets(conn, outgoingSystemPackets)
 	InitializeRemoteConnection(incomingSystemPackets, outgoingSystemPackets)
 	// read packets until end
 	for {
-		sp := <-incomingSystemPackets
-		fmt.Println(sp)
+		select {
+		case sp := <-incomingSystemPackets:
+			fmt.Println(sp)
+		case dspp := <-incomingDSPPackets:
+			fmt.Println(dspp)
+		}
 	}
 
 	/* I think I was emulating the wrong side of the conversation with this block:
