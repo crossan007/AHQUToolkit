@@ -98,7 +98,7 @@ func handleClient(conn net.Conn) {
 
 	channelData2, err := ioutil.ReadFile("ChannelData2.bin")
 	check(err)
-	WriteSystemPacket(SystemPacket{groupid: 0x22, data: channelData2}, conn)
+	WriteSystemPacket(SystemPacket{groupid: 0x16, data: channelData2}, conn)
 
 	WriteSystemPacket(CreateSystemPacketFromHexString(0x0b, "0000FF00"), conn)
 
