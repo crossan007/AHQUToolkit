@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/binary"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -11,46 +10,6 @@ import (
 	"strings"
 	"time"
 )
-
-type SystemPacket struct {
-	groupid byte
-	data    []byte
-}
-
-type MixerVersion struct {
-	// Board Type can be 01 for QU-16, 02 for QU-24, or 03 for QU-32
-	BoardType     uint16
-	FirmwareMajor uint16
-	FirmwareMinor uint16
-	FirmwarePatch uint16
-}
-
-func (sp SystemPacket) String() string {
-	if sp.groupid == 0 {
-		var port = int(binary.LittleEndian.Uint16(sp.data))
-		return fmt.Sprintf("Received remote control UDP listening port: %d", port)
-	} else if sp.groupid == 4 {
-		return "Received heartbeat packet"
-	} else {
-		return fmt.Sprintf("Received System Packet.  GroupID: %d; length: %d; data:%s", sp.groupid, len(sp.data), sp.data)
-	}
-}
-
-func (mv MixerVersion) ToBytes() []byte {
-	//mixer version [(1)board - 0x01=16; 0x02=24; 0x03=32][(1)major 0x01 ][(2)minor 0x5f00 ][(2)patch 0xd111]
-	outbuf := make([]byte, 12)
-	response := make([]byte, 2)
-	binary.LittleEndian.PutUint16(response, mv.BoardType)
-	outbuf[0] = response[0]
-	binary.LittleEndian.PutUint16(response, mv.FirmwareMajor)
-	outbuf[1] = response[0]
-	binary.LittleEndian.PutUint16(response, mv.FirmwareMinor)
-	outbuf[2] = response[0]
-	binary.LittleEndian.PutUint16(response, mv.FirmwarePatch)
-	copy(outbuf[4:], response)
-	fmt.Println("SystemVersionString: " + hex.EncodeToString(outbuf[:]))
-	return outbuf
-}
 
 var thisMixerVersion MixerVersion
 
@@ -89,15 +48,15 @@ func handleClient(conn net.Conn) {
 		* send a system packet with the mxer type and firmware version
 
 	*/
+
+	systempackets := make(chan SystemPacket)
+	go ReceivePackets(conn, systempackets)
+
 	var ClientUDPListeningPort = 0
 
 	for i := 0; i < 2; i++ {
 		//read two system packets from the remote
-		sp, err := ReadSystemPacket(conn)
-		if err != nil {
-			fmt.Println("Error reading system packet: " + err.Error())
-			return
-		}
+		sp := <-systempackets
 		if sp.groupid == 0 {
 			ClientUDPListeningPort = int(binary.LittleEndian.Uint16(sp.data))
 		}
@@ -109,26 +68,16 @@ func handleClient(conn net.Conn) {
 	WriteSystemPacket(SystemPacket{groupid: 0x01, data: thisMixerVersion.ToBytes()}, conn)
 
 	for i := 0; i < 1; i++ {
-		sp1, err1 := ReadSystemPacket(conn)
-		if err1 != nil {
-			fmt.Println("Error reading system packet: " + err1.Error())
-			return
-		} else {
-			fmt.Println(sp1)
-		}
+		sp := <-systempackets
+		fmt.Println(sp)
 	}
 
 	WriteSystemPacket(SystemPacket{groupid: 0x01, data: thisMixerVersion.ToBytes()}, conn)
 
 	// after the second time sending 03015.., wait for 10 system packets from the client;
 	for i := 0; i < 10; i++ {
-		sp1, err1 := ReadSystemPacket(conn)
-		if err1 != nil {
-			fmt.Println("Error reading system packet: " + err1.Error())
-			return
-		} else {
-			fmt.Println(sp1)
-		}
+		sp := <-systempackets
+		fmt.Println(sp)
 	}
 
 	// after 10 packets received, send the channel data
@@ -174,12 +123,8 @@ func handleClient(conn net.Conn) {
 
 	// read packets until end
 	for {
-		sp1, err1 := ReadSystemPacket(conn)
-		if err1 != nil {
-			fmt.Println("Error reading system packet: " + err1.Error())
-		} else {
-			fmt.Println(sp1)
-		}
+		sp := <-systempackets
+		fmt.Println(sp)
 	}
 
 	/* I think I was emulating the wrong side of the conversation with this block:
@@ -194,94 +139,6 @@ func handleClient(conn net.Conn) {
 	WriteSystemPacket(CreateSystemPacketFromHexString(4, "1200"), conn)
 	WriteSystemPacket(CreateSystemPacketFromHexString(4, "1000"), conn)*/
 
-}
-
-func GetUDPPortSystemPacket(portNumber int) (sp SystemPacket) {
-
-	UDPPort := uint16(portNumber)
-	response := make([]byte, 2)
-	binary.LittleEndian.PutUint16(response, UDPPort)
-	//response, _ := hex.DecodeString("00c0") // this tells the remote client the mixer's UDP listening port: 49152
-	packet := SystemPacket{
-		groupid: 0x00,
-		data:    response}
-	return packet
-}
-
-func CreateSystemPacketFromHexString(groupId byte, data string) (sp SystemPacket) {
-	byteArray, _ := hex.DecodeString(data)
-	return SystemPacket{groupid: groupId, data: byteArray}
-}
-
-func ReadSystemPacket(conn net.Conn) (sp SystemPacket, err error) {
-	var buf1 [1]byte
-
-	n, err1 := conn.Read(buf1[0:])
-	if err1 != nil {
-		return sp, errors.New("Error reading connection buffer, read " + strconv.Itoa(n) + " bytes read")
-	}
-	if buf1[0] != 0x7f {
-		return sp, errors.New("Expected header 0x07 for system packet; got: " + hex.EncodeToString(buf1[:]))
-	}
-
-	var buf2 [3]byte
-	_, err2 := conn.Read(buf2[0:])
-	if err2 != nil {
-		return sp, errors.New("Error reading packet group or data length")
-	}
-	var group = buf2[0]
-	var len = int(buf2[1])
-	buf3 := make([]byte, len)
-	_, err3 := conn.Read(buf3[0:])
-	if err3 != nil {
-		return sp, errors.New("Error reading system packet data")
-	}
-
-	return SystemPacket{
-		groupid: group,
-		data:    buf3}, nil
-}
-
-func WriteSystemPackets(sp []SystemPacket, conn net.Conn) {
-	var outbuf []byte
-	for _, onepacket := range sp {
-		packetbytes := SystemPacketToByteArray(onepacket)
-		outbuf = append(outbuf, packetbytes...)
-	}
-	_, err := conn.Write(outbuf)
-	if err != nil {
-		fmt.Println("Error writing to connection")
-	}
-	//fmt.Println("Wrote System packet: " + hex.EncodeToString(outbuf))
-}
-func WriteSystemPacket(sp SystemPacket, conn net.Conn) {
-	outbuf := SystemPacketToByteArray(sp)
-	_, err := conn.Write(outbuf)
-	if err != nil {
-		fmt.Println("Error writing to connection")
-	}
-	//fmt.Println("Wrote System packet: " + hex.EncodeToString(outbuf))
-}
-
-func SystemPacketToByteArray(sp SystemPacket) (bytes []byte) {
-	var packetByteCount = 4 + len(sp.data)
-	outbuf := make([]byte, packetByteCount)
-	// set the packet header and groupid
-	outbuf[0] = 0x7f
-	outbuf[1] = sp.groupid
-	//set the data length in Little Endian encoding.
-	lengthBytes := make([]byte, 2)
-	binary.LittleEndian.PutUint16(lengthBytes, uint16(len(sp.data)))
-	copy(outbuf[2:], lengthBytes)
-	// copy the data to the output buffer.
-	copy(outbuf[4:], sp.data)
-	return outbuf
-}
-
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
 }
 
 func SendUDPHeartbeat(conn net.Conn) {
