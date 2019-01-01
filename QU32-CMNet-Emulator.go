@@ -79,6 +79,19 @@ func handleClient(conn net.Conn) {
 
 	WriteSystemPacket(CreateSystemPacketFromHexString(0x01, "03015f01d111000000000000"), conn)
 
+	// after the second time sending 03015.., wait for 10 system packets from the client;
+	for i := 0; i < 10; i++ {
+		sp1, err1 := ReadSystemPacket(conn)
+		if err1 != nil {
+			fmt.Println("Error reading system packet: " + err1.Error())
+			return
+		} else {
+			fmt.Println(sp1)
+		}
+	}
+
+	// after 10 packets received, send the channel data
+
 	channelData1, err := ioutil.ReadFile("ChannelData1.bin")
 	check(err)
 	WriteSystemPacket(SystemPacket{groupid: 0x06, data: channelData1}, conn)
@@ -119,15 +132,6 @@ func handleClient(conn net.Conn) {
 	WriteSystemPacket(CreateSystemPacketFromHexString(4, "1200"), conn)
 	WriteSystemPacket(CreateSystemPacketFromHexString(4, "1000"), conn)*/
 
-	for i := 0; i < 10; i++ {
-		sp1, err1 := ReadSystemPacket(conn)
-		if err1 != nil {
-			fmt.Println("Error reading system packet: " + err1.Error())
-			return
-		} else {
-			fmt.Println(sp1)
-		}
-	}
 }
 
 func GetUDPPortSystemPacket(portNumber int) (sp SystemPacket) {
