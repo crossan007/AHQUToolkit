@@ -64,18 +64,6 @@ func handleClient(conn net.Conn) {
 		}
 	}
 
-	/* I think I was emulating the wrong side of the conversation with this block:
-	WriteSystemPacket(CreateSystemPacketFromHexString(4, "13000000ffffffffffff9f0f0000000000000000000000000000000000e003c0ffffff7f"), conn)
-	WriteSystemPacket(CreateSystemPacketFromHexString(4, "15000000fac1230604000028d1041c000000000000000000000000000000000000000000"), conn)
-	WriteSystemPacket(CreateSystemPacketFromHexString(4, "0700"), conn)
-	WriteSystemPacket(CreateSystemPacketFromHexString(4, "0600"), conn)
-	WriteSystemPacket(CreateSystemPacketFromHexString(4, "1b640000"), conn)
-	WriteSystemPacket(CreateSystemPacketFromHexString(4, "1a640000"), conn)
-	WriteSystemPacket(CreateSystemPacketFromHexString(4, "19640000"), conn)
-	WriteSystemPacket(CreateSystemPacketFromHexString(4, "1100"), conn)
-	WriteSystemPacket(CreateSystemPacketFromHexString(4, "1200"), conn)
-	WriteSystemPacket(CreateSystemPacketFromHexString(4, "1000"), conn)*/
-
 }
 func InitializeRemoteConnection(incomingSystemPackets <-chan SystemPacket, outgoingSystemPackets chan<- SystemPacket) {
 	var ClientUDPListeningPort = 0
