@@ -66,18 +66,18 @@ func handleClient(conn net.Conn) {
 
 }
 func InitializeRemoteConnection(incomingSystemPackets <-chan SystemPacket, outgoingSystemPackets chan<- SystemPacket) {
-	var ClientUDPListeningPort = 0
 
-	for i := 0; i < 2; i++ {
-		//read two system packets from the remote
-		sp := <-incomingSystemPackets
-		if sp.groupid == 0 {
-			ClientUDPListeningPort = int(binary.LittleEndian.Uint16(sp.data))
-		}
+	sp := <-incomingSystemPackets
+	var ClientUDPListeningPort = int(binary.LittleEndian.Uint16(sp.data))
+	fmt.Println("Remote UDP Port: " + strconv.Itoa(ClientUDPListeningPort))
 
-		fmt.Println(sp)
+	sp2 := <-incomingSystemPackets
+	var ClientType = int(binary.LittleEndian.Uint16(sp2.data))
+	if ClientType == 256 {
+		fmt.Println("QU-Pad connected")
+	} else if ClientType == 0 {
+		fmt.Println("QU-You connected")
 	}
-	fmt.Println(strconv.Itoa(ClientUDPListeningPort))
 	// write the mixer handshake response
 	outgoingSystemPackets <- GetUDPPortSystemPacket(49152)
 	outgoingSystemPackets <- SystemPacket{groupid: 0x01, data: thisMixerVersion.ToBytes()}

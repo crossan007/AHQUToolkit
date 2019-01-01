@@ -43,7 +43,6 @@ func (mv MixerVersion) ToBytes() []byte {
 	outbuf[2] = response[0]
 	binary.LittleEndian.PutUint16(response, mv.FirmwarePatch)
 	copy(outbuf[4:], response)
-	fmt.Println("SystemVersionString: " + hex.EncodeToString(outbuf[:]))
 	return outbuf
 }
 
