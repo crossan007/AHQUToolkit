@@ -8,6 +8,8 @@ import (
 	"io/ioutil"
 	"net"
 	"strconv"
+	"strings"
+	"time"
 )
 
 type SystemPacket struct {
@@ -54,6 +56,8 @@ func handleClient(conn net.Conn) {
 		* send a system packet with some data; not sure what it means: 03015f01d111000000000000
 
 	*/
+	var ClientUDPListeningPort = 0
+
 	for i := 0; i < 2; i++ {
 		//read two system packets from the remote
 		sp, err := ReadSystemPacket(conn)
@@ -61,6 +65,10 @@ func handleClient(conn net.Conn) {
 			fmt.Println("Error reading system packet: " + err.Error())
 			return
 		}
+		if sp.groupid == 0 {
+			ClientUDPListeningPort = int(binary.LittleEndian.Uint16(sp.data))
+		}
+
 		fmt.Println(sp)
 	}
 	// write the mixer handshake response
@@ -119,6 +127,27 @@ func handleClient(conn net.Conn) {
 	channelData5, err := ioutil.ReadFile("ChannelData5.bin")
 	check(err)
 	WriteSystemPacket(SystemPacket{groupid: 0x18, data: channelData5}, conn) //groupid 1b
+
+	// set up the UDP connection
+	var UDPConnectionString = strings.Split(conn.RemoteAddr().String(), ":")[0] + ":" + strconv.Itoa(ClientUDPListeningPort)
+	fmt.Println("Setting up UDP connection to " + UDPConnectionString)
+	UDPconn, err := net.Dial("udp", UDPConnectionString)
+	if err != nil {
+		fmt.Printf("Some error %v", err)
+		return
+	}
+	// send the heartbeat on a regular interval with routine SendUDPHeartbeat
+	go SendUDPHeartbeat(UDPconn)
+
+	// read packets until end
+	for {
+		sp1, err1 := ReadSystemPacket(conn)
+		if err1 != nil {
+			fmt.Println("Error reading system packet: " + err1.Error())
+		} else {
+			fmt.Println(sp1)
+		}
+	}
 
 	/* I think I was emulating the wrong side of the conversation with this block:
 	WriteSystemPacket(CreateSystemPacketFromHexString(4, "13000000ffffffffffff9f0f0000000000000000000000000000000000e003c0ffffff7f"), conn)
@@ -220,4 +249,27 @@ func check(e error) {
 	if e != nil {
 		panic(e)
 	}
+}
+
+func SendUDPHeartbeat(conn net.Conn) {
+
+	ticker := time.NewTicker(100 * time.Millisecond)
+	go func() {
+		for t := range ticker.C {
+			byteArray1, _ := hex.DecodeString("7f261200000000000000000000000000000000000000")
+			_, err := conn.Write(byteArray1)
+
+			if err != nil {
+				fmt.Printf("Couldn't send response %v", err)
+			}
+
+			byteArray2, _ := hex.DecodeString("7f2759000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
+			_, err2 := conn.Write(byteArray2)
+			if err2 != nil {
+				fmt.Printf("Couldn't send response %v", err)
+			}
+			_ = t
+		}
+	}()
+
 }
