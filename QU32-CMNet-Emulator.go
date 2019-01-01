@@ -63,7 +63,7 @@ func handleClient(conn net.Conn) {
 		fmt.Println(sp)
 	}
 	// write the mixer handshake response
-	WriteSystemPacket(GetUDPPortSystemPacket(41952), conn)
+	WriteSystemPacket(GetUDPPortSystemPacket(49152), conn)
 	response1, _ := hex.DecodeString("03015f01d111000000000000")
 	WriteSystemPacket(SystemPacket{groupid: 01, data: response1}, conn)
 	for i := 0; i < 1; i++ {
@@ -75,29 +75,19 @@ func handleClient(conn net.Conn) {
 			fmt.Println(sp1)
 		}
 	}
-	response2, _ := hex.DecodeString("13000000ffffffffffff9f0f0000000000000000000000000000000000e003c0ffffff7f")
-	WriteSystemPacket(SystemPacket{groupid: 04, data: response2}, conn)
 
-	response3, _ := hex.DecodeString("15000000fac1230604000028d1041c000000000000000000000000000000000000000000")
-	WriteSystemPacket(SystemPacket{groupid: 04, data: response3}, conn)
+	WriteSystemPacket(SystemPacket{groupid: 01, data: response1}, conn)
 
-	response4, _ := hex.DecodeString("02007f0402000f00")
-	WriteSystemPacket(SystemPacket{groupid: 04, data: response4}, conn)
-
-	response5, _ := hex.DecodeString("07007f04020006007f0404001b640000") //87
-	WriteSystemPacket(SystemPacket{groupid: 04, data: response5}, conn)
-
-	response5b, _ := hex.DecodeString("1a640000")
-	WriteSystemPacket(SystemPacket{groupid: 04, data: response5b}, conn)
-
-	response6, _ := hex.DecodeString("19640000")
-	WriteSystemPacket(SystemPacket{groupid: 04, data: response6}, conn)
-
-	response7, _ := hex.DecodeString("1100")
-	WriteSystemPacket(SystemPacket{groupid: 04, data: response7}, conn)
-
-	response8, _ := hex.DecodeString("12007f0402001000")
-	WriteSystemPacket(SystemPacket{groupid: 04, data: response8}, conn)
+	WriteSystemPacket(CreateSystemPacketFromHexString(4, "13000000ffffffffffff9f0f0000000000000000000000000000000000e003c0ffffff7f"), conn)
+	WriteSystemPacket(CreateSystemPacketFromHexString(4, "15000000fac1230604000028d1041c000000000000000000000000000000000000000000"), conn)
+	WriteSystemPacket(CreateSystemPacketFromHexString(4, "0700"), conn)
+	WriteSystemPacket(CreateSystemPacketFromHexString(4, "0600"), conn)
+	WriteSystemPacket(CreateSystemPacketFromHexString(4, "1b640000"), conn)
+	WriteSystemPacket(CreateSystemPacketFromHexString(4, "1a640000"), conn)
+	WriteSystemPacket(CreateSystemPacketFromHexString(4, "19640000"), conn)
+	WriteSystemPacket(CreateSystemPacketFromHexString(4, "1100"), conn)
+	WriteSystemPacket(CreateSystemPacketFromHexString(4, "1200"), conn)
+	WriteSystemPacket(CreateSystemPacketFromHexString(4, "1000"), conn)
 
 	for i := 0; i < 10; i++ {
 		sp1, err1 := ReadSystemPacket(conn)
@@ -120,6 +110,11 @@ func GetUDPPortSystemPacket(portNumber int) (sp SystemPacket) {
 		groupid: 0,
 		data:    response}
 	return packet
+}
+
+func CreateSystemPacketFromHexString(groupId int, data string) (sp SystemPacket) {
+	byteArray, _ := hex.DecodeString(data)
+	return SystemPacket{groupid: groupId, data: byteArray}
 }
 
 func ReadSystemPacket(conn net.Conn) (sp SystemPacket, err error) {
