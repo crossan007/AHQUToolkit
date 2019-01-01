@@ -200,10 +200,14 @@ func WriteSystemPacket(sp SystemPacket, conn net.Conn) {
 func SystemPacketToByteArray(sp SystemPacket) (bytes []byte) {
 	var packetByteCount = 4 + len(sp.data)
 	outbuf := make([]byte, packetByteCount)
+	// set the packet header and groupid
 	outbuf[0] = 0x7f
-	outbuf[1] = byte(sp.groupid)
-	outbuf[2] = byte(len(sp.data))
-	outbuf[3] = 0
+	outbuf[1] = sp.groupid
+	//set the data length in Little Endian encoding.
+	lengthBytes := make([]byte, 2)
+	binary.LittleEndian.PutUint16(lengthBytes, uint16(len(sp.data)))
+	copy(outbuf[2:], lengthBytes)
+	// copy the data to the output buffer.
 	copy(outbuf[4:], sp.data)
 	return outbuf
 }
