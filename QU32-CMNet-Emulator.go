@@ -17,6 +17,14 @@ type SystemPacket struct {
 	data    []byte
 }
 
+type MixerVersion struct {
+	// Board Type can be 01 for QU-16, 02 for QU-24, or 03 for QU-32
+	BoardType     uint16
+	FirmwareMajor uint16
+	FirmwareMinor uint16
+	FirmwarePatch uint16
+}
+
 func (sp SystemPacket) String() string {
 	if sp.groupid == 0 {
 		var port = int(binary.LittleEndian.Uint16(sp.data))
@@ -28,7 +36,32 @@ func (sp SystemPacket) String() string {
 	}
 }
 
+func (mv MixerVersion) ToBytes() []byte {
+	//mixer version [(1)board - 0x01=16; 0x02=24; 0x03=32][(1)major 0x01 ][(2)minor 0x5f00 ][(2)patch 0xd111]
+	outbuf := make([]byte, 12)
+	response := make([]byte, 2)
+	binary.LittleEndian.PutUint16(response, mv.BoardType)
+	outbuf[0] = response[0]
+	binary.LittleEndian.PutUint16(response, mv.FirmwareMajor)
+	outbuf[1] = response[0]
+	binary.LittleEndian.PutUint16(response, mv.FirmwareMinor)
+	outbuf[2] = response[0]
+	binary.LittleEndian.PutUint16(response, mv.FirmwarePatch)
+	copy(outbuf[4:], response)
+	fmt.Println("SystemVersionString: " + hex.EncodeToString(outbuf[:]))
+	return outbuf
+}
+
+var thisMixerVersion MixerVersion
+
 func main() {
+
+	thisMixerVersion = MixerVersion{
+		BoardType:     3,
+		FirmwareMajor: 1,
+		FirmwareMinor: 95,
+		FirmwarePatch: 4561}
+
 	ln, err := net.Listen("tcp", ":51326")
 	if err != nil {
 		// handle error
@@ -53,7 +86,7 @@ func handleClient(conn net.Conn) {
 
 		Then, the mixer's response will be
 		* send a system packet with the UDP Port number (49152)
-		* send a system packet with some data; not sure what it means: 03015f01d111000000000000
+		* send a system packet with the mxer type and firmware version
 
 	*/
 	var ClientUDPListeningPort = 0
@@ -73,7 +106,7 @@ func handleClient(conn net.Conn) {
 	}
 	// write the mixer handshake response
 	WriteSystemPacket(GetUDPPortSystemPacket(49152), conn)
-	WriteSystemPacket(CreateSystemPacketFromHexString(0x01, "03015f01d111000000000000"), conn)
+	WriteSystemPacket(SystemPacket{groupid: 0x01, data: thisMixerVersion.ToBytes()}, conn)
 
 	for i := 0; i < 1; i++ {
 		sp1, err1 := ReadSystemPacket(conn)
@@ -85,7 +118,7 @@ func handleClient(conn net.Conn) {
 		}
 	}
 
-	WriteSystemPacket(CreateSystemPacketFromHexString(0x01, "03015f01d111000000000000"), conn)
+	WriteSystemPacket(SystemPacket{groupid: 0x01, data: thisMixerVersion.ToBytes()}, conn)
 
 	// after the second time sending 03015.., wait for 10 system packets from the client;
 	for i := 0; i < 10; i++ {
