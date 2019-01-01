@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net"
 )
 
@@ -30,9 +31,17 @@ func ReceivePackets(conn net.Conn, systempackets chan<- SystemPacket) {
 			systempackets <- SystemPacket{
 				groupid: group,
 				data:    buf3}
-		} else {
+		} else if buf1[0] == 0xf7 {
+			fmt.Println("Received DSP Packet")
 			//return sp, errors.New("Expected header 0x07 for system packet; got: " + hex.EncodeToString(buf1[:]))
 		}
 	}
 
+}
+
+func SendPackets(conn net.Conn, systempackets <-chan SystemPacket) {
+	for {
+		sp := <-systempackets
+		WriteSystemPacket(sp, conn)
+	}
 }

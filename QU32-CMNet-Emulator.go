@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"net"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -49,81 +48,14 @@ func handleClient(conn net.Conn) {
 
 	*/
 
-	systempackets := make(chan SystemPacket)
-	go ReceivePackets(conn, systempackets)
-
-	var ClientUDPListeningPort = 0
-
-	for i := 0; i < 2; i++ {
-		//read two system packets from the remote
-		sp := <-systempackets
-		if sp.groupid == 0 {
-			ClientUDPListeningPort = int(binary.LittleEndian.Uint16(sp.data))
-		}
-
-		fmt.Println(sp)
-	}
-	// write the mixer handshake response
-	WriteSystemPacket(GetUDPPortSystemPacket(49152), conn)
-	WriteSystemPacket(SystemPacket{groupid: 0x01, data: thisMixerVersion.ToBytes()}, conn)
-
-	for i := 0; i < 1; i++ {
-		sp := <-systempackets
-		fmt.Println(sp)
-	}
-
-	WriteSystemPacket(SystemPacket{groupid: 0x01, data: thisMixerVersion.ToBytes()}, conn)
-
-	// after the second time sending 03015.., wait for 10 system packets from the client;
-	for i := 0; i < 10; i++ {
-		sp := <-systempackets
-		fmt.Println(sp)
-	}
-
-	// after 10 packets received, send the channel data
-
-	channelData1, err := ioutil.ReadFile("ChannelData1.bin")
-	check(err)
-	WriteSystemPacket(SystemPacket{groupid: 0x06, data: channelData1}, conn)
-
-	channelData2, err := ioutil.ReadFile("ChannelData2.bin")
-	check(err)
-	WriteSystemPacket(SystemPacket{groupid: 0x16, data: channelData2}, conn)
-
-	WriteSystemPacket(CreateSystemPacketFromHexString(0x0b, "0000FF00"), conn)
-
-	WriteSystemPacket(CreateSystemPacketFromHexString(0x0a, "00000000"), conn)
-
-	WriteSystemPacket(CreateSystemPacketFromHexString(0x22, "0100"), conn)
-	WriteSystemPacket(CreateSystemPacketFromHexString(0x21, "0100"), conn)
-	WriteSystemPacket(CreateSystemPacketFromHexString(0x20, "0100"), conn)
-
-	channelData3, err := ioutil.ReadFile("ChannelData3.bin")
-	check(err)
-	WriteSystemPacket(SystemPacket{groupid: 0x1a, data: channelData3}, conn) //groupid 1a
-
-	channelData4, err := ioutil.ReadFile("ChannelData4.bin")
-	check(err)
-	WriteSystemPacket(SystemPacket{groupid: 0x1b, data: channelData4}, conn) //groupid 1b
-
-	channelData5, err := ioutil.ReadFile("ChannelData5.bin")
-	check(err)
-	WriteSystemPacket(SystemPacket{groupid: 0x18, data: channelData5}, conn) //groupid 1b
-
-	// set up the UDP connection
-	var UDPConnectionString = strings.Split(conn.RemoteAddr().String(), ":")[0] + ":" + strconv.Itoa(ClientUDPListeningPort)
-	fmt.Println("Setting up UDP connection to " + UDPConnectionString)
-	UDPconn, err := net.Dial("udp", UDPConnectionString)
-	if err != nil {
-		fmt.Printf("Some error %v", err)
-		return
-	}
-	// send the heartbeat on a regular interval with routine SendUDPHeartbeat
-	go SendUDPHeartbeat(UDPconn)
-
+	incomingSystemPackets := make(chan SystemPacket)
+	outgoingSystemPackets := make(chan SystemPacket)
+	go ReceivePackets(conn, incomingSystemPackets)
+	go SendPackets(conn, outgoingSystemPackets)
+	InitializeRemoteConnection(incomingSystemPackets, outgoingSystemPackets)
 	// read packets until end
 	for {
-		sp := <-systempackets
+		sp := <-incomingSystemPackets
 		fmt.Println(sp)
 	}
 
@@ -139,6 +71,77 @@ func handleClient(conn net.Conn) {
 	WriteSystemPacket(CreateSystemPacketFromHexString(4, "1200"), conn)
 	WriteSystemPacket(CreateSystemPacketFromHexString(4, "1000"), conn)*/
 
+}
+func InitializeRemoteConnection(incomingSystemPackets <-chan SystemPacket, outgoingSystemPackets chan<- SystemPacket) {
+	var ClientUDPListeningPort = 0
+
+	for i := 0; i < 2; i++ {
+		//read two system packets from the remote
+		sp := <-incomingSystemPackets
+		if sp.groupid == 0 {
+			ClientUDPListeningPort = int(binary.LittleEndian.Uint16(sp.data))
+		}
+
+		fmt.Println(sp)
+	}
+	fmt.Println(strconv.Itoa(ClientUDPListeningPort))
+	// write the mixer handshake response
+	outgoingSystemPackets <- GetUDPPortSystemPacket(49152)
+	outgoingSystemPackets <- SystemPacket{groupid: 0x01, data: thisMixerVersion.ToBytes()}
+
+	for i := 0; i < 1; i++ {
+		sp := <-incomingSystemPackets
+		fmt.Println(sp)
+	}
+
+	outgoingSystemPackets <- SystemPacket{groupid: 0x01, data: thisMixerVersion.ToBytes()}
+	// after the second time sending 03015.., wait for 10 system packets from the client;
+	for i := 0; i < 10; i++ {
+		sp := <-incomingSystemPackets
+		fmt.Println(sp)
+	}
+
+	// after 10 packets received, send the channel data
+
+	channelData1, err := ioutil.ReadFile("ChannelData1.bin")
+	check(err)
+	outgoingSystemPackets <- SystemPacket{groupid: 0x06, data: channelData1}
+
+	channelData2, err := ioutil.ReadFile("ChannelData2.bin")
+	check(err)
+	outgoingSystemPackets <- SystemPacket{groupid: 0x16, data: channelData2}
+
+	outgoingSystemPackets <- CreateSystemPacketFromHexString(0x0b, "0000FF00")
+
+	outgoingSystemPackets <- CreateSystemPacketFromHexString(0x0a, "00000000")
+
+	outgoingSystemPackets <- CreateSystemPacketFromHexString(0x22, "0100")
+	outgoingSystemPackets <- CreateSystemPacketFromHexString(0x21, "0100")
+	outgoingSystemPackets <- CreateSystemPacketFromHexString(0x20, "0100")
+
+	channelData3, err := ioutil.ReadFile("ChannelData3.bin")
+	check(err)
+	outgoingSystemPackets <- SystemPacket{groupid: 0x1a, data: channelData3} //groupid 1a
+
+	channelData4, err := ioutil.ReadFile("ChannelData4.bin")
+	check(err)
+	outgoingSystemPackets <- SystemPacket{groupid: 0x1b, data: channelData4} //groupid 1b
+
+	channelData5, err := ioutil.ReadFile("ChannelData5.bin")
+	check(err)
+	outgoingSystemPackets <- SystemPacket{groupid: 0x18, data: channelData5} //groupid 1b
+
+	/* set up the UDP connection
+	var UDPConnectionString = strings.Split(conn.RemoteAddr().String(), ":")[0] + ":" + strconv.Itoa(ClientUDPListeningPort)
+	fmt.Println("Setting up UDP connection to " + UDPConnectionString)
+	UDPconn, err := net.Dial("udp", UDPConnectionString)
+	if err != nil {
+		fmt.Printf("Some error %v", err)
+		return
+	}
+	// send the heartbeat on a regular interval with routine SendUDPHeartbeat
+	go SendUDPHeartbeat(UDPconn)
+	*/
 }
 
 func SendUDPHeartbeat(conn net.Conn) {
