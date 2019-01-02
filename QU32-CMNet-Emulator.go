@@ -78,6 +78,7 @@ func InitializeRemoteConnection(conn net.Conn) (remoteControlClient RemoteContro
 
 	sp2 := <-incomingSystemPackets
 	var ClientType = int(binary.LittleEndian.Uint16(sp2.data))
+	remoteControlClient.clientType = ClientType
 	if ClientType == 256 {
 		fmt.Println("QU-Pad connected")
 	} else if ClientType == 0 {
