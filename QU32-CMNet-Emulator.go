@@ -48,24 +48,29 @@ func handleClient(conn net.Conn) {
 
 	*/
 
-	incomingSystemPackets := make(chan SystemPacket)
-	incomingDSPPackets := make(chan DSPPacket)
-	outgoingSystemPackets := make(chan SystemPacket)
-	go ReceivePackets(conn, incomingSystemPackets, incomingDSPPackets)
-	go SendPackets(conn, outgoingSystemPackets)
-	InitializeRemoteConnection(incomingSystemPackets, outgoingSystemPackets)
+	remoteControlClient := InitializeRemoteConnection(conn)
 	// read packets until end
 	for {
 		select {
-		case sp := <-incomingSystemPackets:
+		case sp := <-remoteControlClient.incomingSystemPackets:
 			fmt.Println(sp)
-		case dspp := <-incomingDSPPackets:
+		case dspp := <-remoteControlClient.incomingDSPPackets:
 			fmt.Println(dspp)
 		}
 	}
 
 }
-func InitializeRemoteConnection(incomingSystemPackets <-chan SystemPacket, outgoingSystemPackets chan<- SystemPacket) {
+func InitializeRemoteConnection(conn net.Conn) (remoteControlClient RemoteControlClient) {
+
+	incomingSystemPackets := make(chan SystemPacket)
+	incomingDSPPackets := make(chan DSPPacket)
+	outgoingSystemPackets := make(chan SystemPacket)
+	go ReceivePackets(conn, incomingSystemPackets, incomingDSPPackets)
+	go SendPackets(conn, outgoingSystemPackets)
+
+	remoteControlClient.incomingSystemPackets = incomingSystemPackets
+	remoteControlClient.outgoingSystemPackets = outgoingSystemPackets
+	remoteControlClient.incomingDSPPackets = incomingDSPPackets
 
 	sp := <-incomingSystemPackets
 	var ClientUDPListeningPort = int(binary.LittleEndian.Uint16(sp.data))
@@ -88,11 +93,11 @@ func InitializeRemoteConnection(incomingSystemPackets <-chan SystemPacket, outgo
 	}
 
 	outgoingSystemPackets <- SystemPacket{groupid: 0x01, data: thisMixerVersion.ToBytes()}
-	// after the second time sending 03015.., wait for 10 system packets from the client;
+	/* after the second time sending 03015.., wait for 10 system packets from the client;
 	for i := 0; i < 10; i++ {
 		sp := <-incomingSystemPackets
 		fmt.Println(sp)
-	}
+	}*/
 
 	// after 10 packets received, send the channel data
 
@@ -135,6 +140,8 @@ func InitializeRemoteConnection(incomingSystemPackets <-chan SystemPacket, outgo
 	// send the heartbeat on a regular interval with routine SendUDPHeartbeat
 	go SendUDPHeartbeat(UDPconn)
 	*/
+
+	return remoteControlClient
 }
 
 func SendUDPHeartbeat(conn net.Conn) {
