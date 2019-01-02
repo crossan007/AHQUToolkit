@@ -27,7 +27,7 @@ func (sp SystemPacket) String() string {
 	} else if sp.groupid == 4 {
 		return "Received heartbeat packet"
 	} else {
-		return fmt.Sprintf("Received System Packet.  GroupID: %d; length: %d; data:%s", sp.groupid, len(sp.data), sp.data)
+		return fmt.Sprintf("System Packet:   GroupID: %d; length: %d; data:%s", sp.groupid, len(sp.data), sp.data)
 	}
 }
 

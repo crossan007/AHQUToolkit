@@ -31,7 +31,22 @@ func ReceivePackets(conn net.Conn, systempackets chan<- SystemPacket, dsppackets
 				groupid: group,
 				data:    buf3}
 		} else if buf1[0] == 0xf7 {
-			dsppackets <- DSPPacket{}
+
+			var DSPBytes [8]byte
+			_, err2 := conn.Read(DSPBytes[0:])
+			if err2 != nil {
+				//return sp, errors.New("Error reading packet group or data length")
+			}
+
+			dsppackets <- DSPPacket{
+				ControlID:   DSPBytes[0],
+				TargetGroup: DSPTargetGroup(DSPBytes[1]),
+				ValueID:     DSPBytes[2],
+				ClientID:    DSPBytes[3],
+				Parameter1:  DSPBytes[4],
+				Parameter2:  DSPBytes[5],
+				Value:       DSPBytes[6],
+			}
 			//return sp, errors.New("Expected header 0x07 for system packet; got: " + hex.EncodeToString(buf1[:]))
 		}
 	}
