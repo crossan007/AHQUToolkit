@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -107,9 +108,7 @@ func InitializeRemoteConnection(conn net.Conn) (remoteControlClient RemoteContro
 
 	// after 10 packets received, send the channel data
 
-	channelData1, err := ioutil.ReadFile("ChannelData1.bin")
-	check(err)
-	outgoingSystemPackets <- SystemPacket{groupid: 0x06, data: channelData1}
+	outgoingSystemPackets <- GetDSPDataSystemPacket()
 
 	channelData2, err := ioutil.ReadFile("ChannelData2.bin")
 	check(err)
