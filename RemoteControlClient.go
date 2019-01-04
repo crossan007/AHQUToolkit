@@ -5,4 +5,6 @@ type RemoteControlClient struct {
 	incomingSystemPackets chan SystemPacket
 	outgoingSystemPackets chan SystemPacket
 	incomingDSPPackets    chan DSPPacket
+	UDPHeartbeatPort      int
+	IPAddress             string
 }

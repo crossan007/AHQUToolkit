@@ -52,6 +52,7 @@ func handleClient(conn net.Conn) {
 	*/
 
 	remoteControlClient := InitializeRemoteConnection(conn)
+	go SendUDPHeartbeat(remoteControlClient)
 	// read packets until end
 	for {
 		select {
@@ -74,10 +75,11 @@ func InitializeRemoteConnection(conn net.Conn) (remoteControlClient RemoteContro
 	remoteControlClient.incomingSystemPackets = incomingSystemPackets
 	remoteControlClient.outgoingSystemPackets = outgoingSystemPackets
 	remoteControlClient.incomingDSPPackets = incomingDSPPackets
+	remoteControlClient.IPAddress = strings.Split(conn.RemoteAddr().String(), ":")[0]
 
 	sp := <-incomingSystemPackets
-	var ClientUDPListeningPort = int(binary.LittleEndian.Uint16(sp.data))
-	fmt.Println("Remote UDP Port: " + strconv.Itoa(ClientUDPListeningPort))
+	remoteControlClient.UDPHeartbeatPort = int(binary.LittleEndian.Uint16(sp.data))
+	fmt.Println("Remote UDP Port: " + strconv.Itoa(remoteControlClient.UDPHeartbeatPort))
 
 	sp2 := <-incomingSystemPackets
 	var ClientType = int(binary.LittleEndian.Uint16(sp2.data))
@@ -133,8 +135,12 @@ func InitializeRemoteConnection(conn net.Conn) (remoteControlClient RemoteContro
 	check(err)
 	outgoingSystemPackets <- SystemPacket{groupid: 0x18, data: channelData5} //groupid 1b
 
-	/* set up the UDP connection
-	var UDPConnectionString = strings.Split(conn.RemoteAddr().String(), ":")[0] + ":" + strconv.Itoa(ClientUDPListeningPort)
+	return remoteControlClient
+}
+
+func SendUDPHeartbeat(remoteControlClient RemoteControlClient) {
+	//set up the UDP connection
+	var UDPConnectionString = remoteControlClient.IPAddress + ":" + strconv.Itoa(remoteControlClient.UDPHeartbeatPort)
 	fmt.Println("Setting up UDP connection to " + UDPConnectionString)
 	UDPconn, err := net.Dial("udp", UDPConnectionString)
 	if err != nil {
@@ -142,26 +148,18 @@ func InitializeRemoteConnection(conn net.Conn) (remoteControlClient RemoteContro
 		return
 	}
 	// send the heartbeat on a regular interval with routine SendUDPHeartbeat
-	go SendUDPHeartbeat(UDPconn)
-	*/
-
-	return remoteControlClient
-}
-
-func SendUDPHeartbeat(conn net.Conn) {
-
 	ticker := time.NewTicker(100 * time.Millisecond)
 	go func() {
 		for t := range ticker.C {
 			byteArray1, _ := hex.DecodeString("7f261200000000000000000000000000000000000000")
-			_, err := conn.Write(byteArray1)
+			_, err := UDPconn.Write(byteArray1)
 
 			if err != nil {
 				fmt.Printf("Couldn't send response %v", err)
 			}
 
 			byteArray2, _ := hex.DecodeString("7f2759000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
-			_, err2 := conn.Write(byteArray2)
+			_, err2 := UDPconn.Write(byteArray2)
 			if err2 != nil {
 				fmt.Printf("Couldn't send response %v", err)
 			}
