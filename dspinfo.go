@@ -36,7 +36,7 @@ func GetDSPDataSystemPacket() (sp SystemPacket) {
 	preamble, _ := hex.DecodeString("B500FEFF035FD1110100000049676C657369610000000000000000000000000000000000000000000000000001A5A5A5EA7F02591500008087740B001082B0A4120000")
 	copy(channelData[0:], preamble)
 	for i := 0; i < 47; i++ {
-		var bytes = GetDSPChannelBytes(DSPChannel{Name: "Chn" + strconv.Itoa(i), Gain: 32768, MainSendLevel: 32768})
+		var bytes = GetDSPChannelBytes(thisMixer.DSPChannels[i])
 		copy(channelData[len(preamble)+i*0xc0:], bytes)
 	}
 	channelData1, err := ioutil.ReadFile("DSPChannelPostamble.bin")

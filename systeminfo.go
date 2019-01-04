@@ -13,8 +13,9 @@ type SystemPacket struct {
 }
 
 type Mixer struct {
-	name    string
-	version MixerVersion
+	Name        string
+	Version     MixerVersion
+	DSPChannels []DSPChannel
 }
 
 type MixerVersion struct {

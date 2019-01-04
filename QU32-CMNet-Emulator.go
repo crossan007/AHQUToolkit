@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/binary"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -16,12 +17,19 @@ var thisMixer Mixer
 func main() {
 
 	thisMixer = Mixer{
-		name: "MixingTool",
-		version: MixerVersion{
+		Name: "MixingTool",
+		Version: MixerVersion{
 			BoardType:     3,
 			FirmwareMajor: 1,
 			FirmwareMinor: 95,
 			FirmwarePatch: 4561}}
+
+	for i := 0; i < 47; i++ {
+		thisMixer.DSPChannels = append(thisMixer.DSPChannels, DSPChannel{Name: "Chn" + strconv.Itoa(i), Gain: 32768, MainSendLevel: 32768})
+	}
+
+	b, err := json.Marshal(thisMixer)
+	fmt.Println(string(b))
 
 	go HandleUDPMixerDiscoveryRequests(thisMixer)
 	ln, err := net.Listen("tcp", ":51326")
@@ -92,14 +100,14 @@ func InitializeRemoteConnection(conn net.Conn) (remoteControlClient RemoteContro
 	}
 	// write the mixer handshake response
 	outgoingSystemPackets <- GetUDPPortSystemPacket(49152)
-	outgoingSystemPackets <- SystemPacket{groupid: 0x01, data: thisMixer.version.ToBytes()}
+	outgoingSystemPackets <- SystemPacket{groupid: 0x01, data: thisMixer.Version.ToBytes()}
 
 	for i := 0; i < 1; i++ {
 		sp := <-incomingSystemPackets
 		fmt.Println(sp)
 	}
 
-	outgoingSystemPackets <- SystemPacket{groupid: 0x01, data: thisMixer.version.ToBytes()}
+	outgoingSystemPackets <- SystemPacket{groupid: 0x01, data: thisMixer.Version.ToBytes()}
 	/* after the second time sending 03015.., wait for 10 system packets from the client;
 	for i := 0; i < 10; i++ {
 		sp := <-incomingSystemPackets
