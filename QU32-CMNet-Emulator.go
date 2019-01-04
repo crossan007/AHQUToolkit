@@ -10,16 +10,19 @@ import (
 	"time"
 )
 
-var thisMixerVersion MixerVersion
+var thisMixer Mixer
 
 func main() {
 
-	thisMixerVersion = MixerVersion{
-		BoardType:     3,
-		FirmwareMajor: 1,
-		FirmwareMinor: 95,
-		FirmwarePatch: 4561}
+	thisMixer = Mixer{
+		name: "MixingTool",
+		version: MixerVersion{
+			BoardType:     3,
+			FirmwareMajor: 1,
+			FirmwareMinor: 95,
+			FirmwarePatch: 4561}}
 
+	go HandleUDPMixerDiscoveryRequests(thisMixer)
 	ln, err := net.Listen("tcp", ":51326")
 	if err != nil {
 		// handle error
@@ -86,14 +89,14 @@ func InitializeRemoteConnection(conn net.Conn) (remoteControlClient RemoteContro
 	}
 	// write the mixer handshake response
 	outgoingSystemPackets <- GetUDPPortSystemPacket(49152)
-	outgoingSystemPackets <- SystemPacket{groupid: 0x01, data: thisMixerVersion.ToBytes()}
+	outgoingSystemPackets <- SystemPacket{groupid: 0x01, data: thisMixer.version.ToBytes()}
 
 	for i := 0; i < 1; i++ {
 		sp := <-incomingSystemPackets
 		fmt.Println(sp)
 	}
 
-	outgoingSystemPackets <- SystemPacket{groupid: 0x01, data: thisMixerVersion.ToBytes()}
+	outgoingSystemPackets <- SystemPacket{groupid: 0x01, data: thisMixer.version.ToBytes()}
 	/* after the second time sending 03015.., wait for 10 system packets from the client;
 	for i := 0; i < 10; i++ {
 		sp := <-incomingSystemPackets

@@ -12,6 +12,11 @@ type SystemPacket struct {
 	data    []byte
 }
 
+type Mixer struct {
+	name    string
+	version MixerVersion
+}
+
 type MixerVersion struct {
 	// Board Type can be 01 for QU-16, 02 for QU-24, or 03 for QU-32
 	BoardType     uint16
