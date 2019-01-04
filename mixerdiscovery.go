@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/hex"
 	"log"
 	"net"
 )
@@ -19,7 +18,7 @@ func HandleUDPMixerDiscoveryRequests(mixer Mixer) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Println("Bytes: " + hex.EncodeToString(b))
+		log.Println("Discovery request from: " + peer.String())
 		var nameBytes = []byte(mixer.Name)
 		if _, err := c.WriteTo(nameBytes, peer); err != nil {
 			log.Fatal(err)

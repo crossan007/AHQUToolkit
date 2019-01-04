@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"log"
 	"net"
 )
 
@@ -77,17 +78,17 @@ func WriteSystemPackets(sp []SystemPacket, conn net.Conn) {
 	}
 	_, err := conn.Write(outbuf)
 	if err != nil {
-		fmt.Println("Error writing to connection")
+		log.Println("Error writing to connection")
 	}
-	//fmt.Println("Wrote System packet: " + hex.EncodeToString(outbuf))
+	//log.Println("Wrote System packet: " + hex.EncodeToString(outbuf))
 }
 func WriteSystemPacket(sp SystemPacket, conn net.Conn) {
 	outbuf := SystemPacketToByteArray(sp)
 	_, err := conn.Write(outbuf)
 	if err != nil {
-		fmt.Println("Error writing to connection")
+		log.Println("Error writing to connection")
 	}
-	//fmt.Println("Wrote System packet: " + hex.EncodeToString(outbuf))
+	//log.Println("Wrote System packet: " + hex.EncodeToString(outbuf))
 }
 
 func SystemPacketToByteArray(sp SystemPacket) (bytes []byte) {

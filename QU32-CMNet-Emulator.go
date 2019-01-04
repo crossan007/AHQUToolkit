@@ -3,9 +3,9 @@ package main
 import (
 	"encoding/binary"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net"
 	"strconv"
 	"strings"
@@ -28,22 +28,22 @@ func main() {
 		thisMixer.DSPChannels = append(thisMixer.DSPChannels, DSPChannel{Name: "Chn" + strconv.Itoa(i), Gain: 32768, MainSendLevel: 32768})
 	}
 
-	b, err := json.Marshal(thisMixer)
-	fmt.Println(string(b))
+	//b, err := json.Marshal(thisMixer)
+	//log.Println(string(b))
 
 	go HandleUDPMixerDiscoveryRequests(thisMixer)
 	ln, err := net.Listen("tcp", ":51326")
 	if err != nil {
 		// handle error
-		fmt.Println("Error creating listener")
+		log.Println("Error creating listener")
 	}
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
 			// handle error
-			fmt.Println("Error accepting connection")
+			log.Println("Error accepting connection")
 		}
-		fmt.Println("Incoming connection from: " + conn.RemoteAddr().String())
+		log.Println("Incoming connection from: " + conn.RemoteAddr().String())
 		go handleClient(conn)
 	}
 }
@@ -66,9 +66,9 @@ func handleClient(conn net.Conn) {
 	for {
 		select {
 		case sp := <-remoteControlClient.incomingSystemPackets:
-			fmt.Println(sp)
+			log.Println(sp)
 		case dspp := <-remoteControlClient.incomingDSPPackets:
-			fmt.Println(dspp)
+			log.Println(dspp)
 		}
 	}
 
@@ -88,15 +88,15 @@ func InitializeRemoteConnection(conn net.Conn) (remoteControlClient RemoteContro
 
 	sp := <-incomingSystemPackets
 	remoteControlClient.UDPHeartbeatPort = int(binary.LittleEndian.Uint16(sp.data))
-	fmt.Println("Remote UDP Port: " + strconv.Itoa(remoteControlClient.UDPHeartbeatPort))
+	log.Println("Remote UDP Port: " + strconv.Itoa(remoteControlClient.UDPHeartbeatPort))
 
 	sp2 := <-incomingSystemPackets
 	var ClientType = int(binary.LittleEndian.Uint16(sp2.data))
 	remoteControlClient.clientType = ClientType
 	if ClientType == 256 {
-		fmt.Println("QU-Pad connected")
+		log.Println("QU-Pad connected")
 	} else if ClientType == 0 {
-		fmt.Println("QU-You connected")
+		log.Println("QU-You connected")
 	}
 	// write the mixer handshake response
 	outgoingSystemPackets <- GetUDPPortSystemPacket(49152)
@@ -104,14 +104,14 @@ func InitializeRemoteConnection(conn net.Conn) (remoteControlClient RemoteContro
 
 	for i := 0; i < 1; i++ {
 		sp := <-incomingSystemPackets
-		fmt.Println(sp)
+		log.Println(sp)
 	}
 
 	outgoingSystemPackets <- SystemPacket{groupid: 0x01, data: thisMixer.Version.ToBytes()}
 	/* after the second time sending 03015.., wait for 10 system packets from the client;
 	for i := 0; i < 10; i++ {
 		sp := <-incomingSystemPackets
-		fmt.Println(sp)
+		log.Println(sp)
 	}*/
 
 	// after 10 packets received, send the channel data
@@ -148,7 +148,7 @@ func InitializeRemoteConnection(conn net.Conn) (remoteControlClient RemoteContro
 func SendUDPHeartbeat(remoteControlClient RemoteControlClient) {
 	//set up the UDP connection
 	var UDPConnectionString = remoteControlClient.IPAddress + ":" + strconv.Itoa(remoteControlClient.UDPHeartbeatPort)
-	fmt.Println("Setting up UDP connection to " + UDPConnectionString)
+	log.Println("Setting up UDP connection to " + UDPConnectionString)
 	UDPconn, err := net.Dial("udp", UDPConnectionString)
 	if err != nil {
 		fmt.Printf("Some error %v", err)

@@ -42,7 +42,7 @@ func GetDSPDataSystemPacket() (sp SystemPacket) {
 	channelData1, err := ioutil.ReadFile("DSPChannelPostamble.bin")
 	check(err)
 	copy(channelData[0x2c83:], channelData1)
-	fmt.Println("DSPData Bytes: " + hex.EncodeToString(channelData[:]))
+	//log.Println("DSPData Bytes: " + hex.EncodeToString(channelData[:]))
 	return SystemPacket{groupid: 0x06, data: channelData[:]}
 }
 
