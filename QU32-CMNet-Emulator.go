@@ -107,7 +107,7 @@ func InitializeRemoteConnection(conn net.Conn) (remoteControlClient RemoteContro
 		log.Println(sp)
 	}
 
-	outgoingSystemPackets <- SystemPacket{groupid: 0x01, data: thisMixer.Version.ToBytes()}
+	//outgoingSystemPackets <- SystemPacket{groupid: 0x01, data: thisMixer.Version.ToBytes()}
 	/* after the second time sending 03015.., wait for 10 system packets from the client;
 	for i := 0; i < 10; i++ {
 		sp := <-incomingSystemPackets
@@ -117,30 +117,53 @@ func InitializeRemoteConnection(conn net.Conn) (remoteControlClient RemoteContro
 	// after 10 packets received, send the channel data
 
 	outgoingSystemPackets <- GetDSPDataSystemPacket()
+	log.Println("Sent DSP Data")
 
-	channelData2, err := ioutil.ReadFile("ChannelData2.bin")
-	check(err)
-	outgoingSystemPackets <- SystemPacket{groupid: 0x16, data: channelData2}
+	if ClientType == 0 {
+		outgoingSystemPackets <- CreateSystemPacketFromHexString(0x02, "0401")
+		log.Println("Sent QU-You init data")
+		for i := 0; i < 1; i++ {
+			sp := <-incomingSystemPackets
+			log.Println(sp)
+		}
+		outgoingSystemPackets <- CreateSystemPacketFromHexString(0x07, "0029000025000101FFFF000025000101FFFF000025000101FFFF000025000101FFFF000025000101FFFF000025000101FFFF000025000101FFFFCC2E25000101FFFF945A25000101FFFF737225000101FFFF076625000101FFFF000025000101FFFF498325000101FFFF1F7825000101FFFF000025000101FFFF000025000101FFFF000025000101FFFF000025000101FFFFAB7D25000101FFFF000025000101FFFFD27D25000101FFFF000025000101FFFF8A7D25000101FFFF420625000101FFFF907D25000101FFFF426E25000101FFFF000025000101FFFF248225000101FFFF008A25000101FFFFB27A25000101FFFFDB8125000101FFFF457825000101FFFF000025000100FFFF000025000100FFFF000025000000FFFF000025000101FFFF000025000101FFFF000025000101FFFF000025000101FFFF000025000101FFFF000025000101FFFF000025000101FFFF000025000101FFFF000025000101FFFF000025000101FFFF000025000101FFFF000025000101FFFF000025000101FFFF000025000101FFFF000025000101FFFF000025000101FFFF000025000101FFFF000025000101FFFF000025000101FFFF000025000101FFFF000025000101FFFF000025000101FFFF000025000101FFFF000025000101FFFFFFFFFFFFFFFFFFFF")
+		log.Println("Sent QU-You init data2")
+		/*for i := 0; i < 1; i++ {
+			sp := <-incomingSystemPackets
+			log.Println(sp)
+		}*/
 
-	outgoingSystemPackets <- CreateSystemPacketFromHexString(0x0b, "0000FF00")
+		outgoingSystemPackets <- CreateSystemPacketFromHexString(0x07, "0529907C273F0300008097650B00D0821EC60B00C0792EDD140006000100A739607B000010000C8300800001282FB4708E7A005C00940000008000800080008000800080008000800080008000800080008000800080008000800080008000800080008000800080008000800080008000000000000001009653000000000000F97E009C008000000001000000000400008000000000FFFFFFFF00000000416D616E6461000000000000987E6389607B005C00940000000000FF0000000000000000")
 
-	outgoingSystemPackets <- CreateSystemPacketFromHexString(0x0a, "00000000")
+		log.Println("Sent QU-You init data3")
 
-	outgoingSystemPackets <- CreateSystemPacketFromHexString(0x22, "0100")
-	outgoingSystemPackets <- CreateSystemPacketFromHexString(0x21, "0100")
-	outgoingSystemPackets <- CreateSystemPacketFromHexString(0x20, "0100")
+	} else {
 
-	channelData3, err := ioutil.ReadFile("ChannelData3.bin")
-	check(err)
-	outgoingSystemPackets <- SystemPacket{groupid: 0x1a, data: channelData3} //groupid 1a
+		channelData2, err := ioutil.ReadFile("ChannelData2.bin")
+		check(err)
+		outgoingSystemPackets <- SystemPacket{groupid: 0x16, data: channelData2}
 
-	channelData4, err := ioutil.ReadFile("ChannelData4.bin")
-	check(err)
-	outgoingSystemPackets <- SystemPacket{groupid: 0x1b, data: channelData4} //groupid 1b
+		outgoingSystemPackets <- CreateSystemPacketFromHexString(0x0b, "0000FF00")
 
-	channelData5, err := ioutil.ReadFile("ChannelData5.bin")
-	check(err)
-	outgoingSystemPackets <- SystemPacket{groupid: 0x18, data: channelData5} //groupid 1b
+		outgoingSystemPackets <- CreateSystemPacketFromHexString(0x0a, "00000000")
+
+		outgoingSystemPackets <- CreateSystemPacketFromHexString(0x22, "0100")
+		outgoingSystemPackets <- CreateSystemPacketFromHexString(0x21, "0100")
+		outgoingSystemPackets <- CreateSystemPacketFromHexString(0x20, "0100")
+
+		channelData3, err := ioutil.ReadFile("ChannelData3.bin")
+		check(err)
+		outgoingSystemPackets <- SystemPacket{groupid: 0x1a, data: channelData3} //groupid 1a
+
+		channelData4, err := ioutil.ReadFile("ChannelData4.bin")
+		check(err)
+		outgoingSystemPackets <- SystemPacket{groupid: 0x1b, data: channelData4} //groupid 1b
+
+		channelData5, err := ioutil.ReadFile("ChannelData5.bin")
+		check(err)
+		outgoingSystemPackets <- SystemPacket{groupid: 0x18, data: channelData5} //groupid 1b*/
+		log.Println("Sent QU-Pad init data")
+	}
 
 	return remoteControlClient
 }

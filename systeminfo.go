@@ -66,7 +66,8 @@ func GetUDPPortSystemPacket(portNumber int) (sp SystemPacket) {
 }
 
 func CreateSystemPacketFromHexString(groupId byte, data string) (sp SystemPacket) {
-	byteArray, _ := hex.DecodeString(data)
+	byteArray, e := hex.DecodeString(data)
+	check(e)
 	return SystemPacket{groupid: groupId, data: byteArray}
 }
 
