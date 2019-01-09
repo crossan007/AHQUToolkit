@@ -32,16 +32,29 @@ type DSPChannel struct {
 }
 
 func GetDSPDataSystemPacket() (sp SystemPacket) {
-	var channelData [0x6520]byte
+	var channelData [0x651f]byte
+	var possibleChannelSettings [0x24de]byte
 	preamble, _ := hex.DecodeString("B500FEFF035FD1110100000049676C657369610000000000000000000000000000000000000000000000000001A5A5A5EA7F02591500008087740B001082B0A4120000")
 	copy(channelData[0:], preamble)
 	for i := 0; i < 47; i++ {
 		var bytes = GetDSPChannelBytes(thisMixer.DSPChannels[i])
 		copy(channelData[len(preamble)+i*0xc0:], bytes)
 	}
-	channelData1, err := ioutil.ReadFile("DSPChannelPostamble.bin")
+	// offset here shoule be
+
+	bytes, _ := hex.DecodeString("000025000101FFFF")
+	for i := 0; i < 1179; i++ {
+		copy(possibleChannelSettings[len(bytes)*i:], bytes)
+	}
+
+	channelData1, err := ioutil.ReadFile("DSPChannelPostamble.bin") // seems like 1dd-26ba of this is 0x49b (1,179) 8-bit repetitions of "00 00 25 00 01 01 FF FF"; TODO:  pull this thread
 	check(err)
-	copy(channelData[0x2c83:], channelData1)
+	copy(channelData[0x2c83:], channelData1[:])
+	copy(channelData[0x2e60:], possibleChannelSettings[:])
+
+	errf := ioutil.WriteFile("ChannelDataSent.bin", channelData[:], 0644)
+	check(errf)
+	//
 	//log.Println("DSPData Bytes: " + hex.EncodeToString(channelData[:]))
 	return SystemPacket{groupid: 0x06, data: channelData[:]}
 }
