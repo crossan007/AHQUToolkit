@@ -15,3 +15,4 @@ Additionally, it will provide a real-time display for the following:
 # Resources:
 * Dealing with Big / Little Endian in Go: https://golang.org/src/encoding/binary/example_test.go
 * Networking: https://appliedgo.net/networking/
+* Specify Source Ports with UDP http://ipengineer.net/2016/05/golang-net-package-udp-client-with-specific-source-port/

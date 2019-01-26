@@ -13,20 +13,6 @@ type SystemPacket struct {
 	data    []byte
 }
 
-type Mixer struct {
-	Name        string
-	Version     MixerVersion
-	DSPChannels []DSPChannel
-}
-
-type MixerVersion struct {
-	// Board Type can be 01 for QU-16, 02 for QU-24, or 03 for QU-32
-	BoardType     uint16
-	FirmwareMajor uint16
-	FirmwareMinor uint16
-	FirmwarePatch uint16
-}
-
 func (sp SystemPacket) String() string {
 	if sp.groupid == 0 {
 		var port = int(binary.LittleEndian.Uint16(sp.data))
@@ -36,21 +22,6 @@ func (sp SystemPacket) String() string {
 	} else {
 		return fmt.Sprintf("System Packet:   GroupID: %d; length: %d; data:%s", sp.groupid, len(sp.data), hex.EncodeToString(sp.data))
 	}
-}
-
-func (mv MixerVersion) ToBytes() []byte {
-	//mixer version [(1)board - 0x01=16; 0x02=24; 0x03=32][(1)major 0x01 ][(2)minor 0x5f00 ][(2)patch 0xd111]
-	outbuf := make([]byte, 12)
-	response := make([]byte, 2)
-	binary.LittleEndian.PutUint16(response, mv.BoardType)
-	outbuf[0] = response[0]
-	binary.LittleEndian.PutUint16(response, mv.FirmwareMajor)
-	outbuf[1] = response[0]
-	binary.LittleEndian.PutUint16(response, mv.FirmwareMinor)
-	outbuf[2] = response[0]
-	binary.LittleEndian.PutUint16(response, mv.FirmwarePatch)
-	copy(outbuf[4:], response)
-	return outbuf
 }
 
 func GetUDPPortSystemPacket(portNumber int) (sp SystemPacket) {

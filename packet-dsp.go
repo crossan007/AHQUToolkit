@@ -42,7 +42,10 @@ func GetDSPDataSystemPacket() (sp SystemPacket) {
 	}
 	// offset here shoule be
 
-	bytes, _ := hex.DecodeString("000025000101FFFF")
+	bytes, _ := hex.DecodeString("000030000101FFFF")
+	//bytes, _ := hex.DecodeString("000025000100FFFF") // turns off routing
+	//bytes, _ := hex.DecodeString("000025000000FFFF")
+
 	for i := 0; i < 1179; i++ {
 		copy(possibleChannelSettings[len(bytes)*i:], bytes)
 	}
