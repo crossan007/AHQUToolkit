@@ -12,6 +12,7 @@ type Mixer struct {
 	Name                     string
 	Version                  MixerVersion
 	DSPChannels              []DSPChannel
+	VUMeterChannels          []RemoteControlVUMeter
 	RemoteControlClients     []RemoteControlClient
 	outgoingHeartbeatPackets chan HeartbeatPacket
 }

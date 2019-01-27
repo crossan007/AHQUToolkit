@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
+	"math"
 	"net"
 	"strconv"
 	"time"
@@ -36,6 +37,18 @@ func main() {
 		// handle error
 		log.Println("Error creating listener")
 	}
+	go func() {
+		ticker := time.NewTicker(10 * time.Millisecond)
+		var counter = 3
+		thisMixer.VUMeterChannels = make([]RemoteControlVUMeter, 40)
+		for t := range ticker.C {
+			_ = t
+			for i := 0; i < 40; i++ {
+				thisMixer.VUMeterChannels[i].Volume = float32(math.Abs(math.Sin(math.Pi * float64(counter) / 500)))
+			}
+			counter++
+		}
+	}()
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
