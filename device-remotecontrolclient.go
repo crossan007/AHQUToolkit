@@ -23,10 +23,6 @@ type RemoteControlClient struct {
 	IPAddress                string
 }
 
-type RemoteControlVUMeter struct {
-	value []byte
-}
-
 func initializeRemoteConnection(conn net.Conn, thisMixer *Mixer) (remoteControlClient RemoteControlClient) {
 
 	remoteControlClient.TCPConnection = conn
@@ -225,26 +221,18 @@ func SendQUYOUUDPHeartbeat(remoteControlClient RemoteControlClient, thisMixer *M
 				thisMixer.outgoingHeartbeatPackets <- HeartbeatPacket{data: byteArray1, remoteControlClient: remoteControlClient}
 			} else {
 				VUBytes := make([]byte, 0x324)
-				VUs := make([]RemoteControlVUMeter, 40)
-				var ba2string = "7f232003"
-				for i := 0; i < 40; i++ {
-					//randbytes := make([]byte, 20)
-					//rand.Read(randbytes)
 
-					Volume := (.375 * 65535) + (.200*65535)*math.Abs(math.Sin(math.Pi*float64(counter)/1000))
-					VolumeResponse := make([]byte, 4)
-					binary.LittleEndian.PutUint16(VolumeResponse, uint16(Volume))
-					hexBytes, _ := hex.DecodeString("0000000000000000000000000000000000000000")
-					copy(hexBytes[4:], VolumeResponse)
-					VUs[i].value = hexBytes
+				VUs := make([]RemoteControlVUMeter, 40)
+				for i := 0; i < 40; i++ {
+					VUs[i].Volume = float32(math.Abs(math.Sin(math.Pi * float64(counter) / 1000)))
 				}
 
-				ba2string = "7f232003"
+				ba2string := "7f232003"
 				// and every fourth packet should be these two
 				byteArray2, _ := hex.DecodeString(ba2string)
 				copy(VUBytes[:], byteArray2)
 				for i, VU := range VUs {
-					copy(VUBytes[4+(20*i):], VU.value)
+					copy(VUBytes[4+(20*i):], toBytes(VU))
 				}
 
 				thisMixer.outgoingHeartbeatPackets <- HeartbeatPacket{data: VUBytes, remoteControlClient: remoteControlClient}
