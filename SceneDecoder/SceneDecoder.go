@@ -40,30 +40,23 @@ func convertScene(fileName string) {
 	c := make([]SavedChannel, channelsCount)
 	Scene.Channels = c
 
-	// var fileName = "CH1.dat"
 	channelData1, _ := ioutil.ReadFile(fileName)
 
 	Scene.Name = string(channelData1[12:23])
 	for i := 0; i < channelsCount; i++ {
-		var currentChannelOffset = channelsOffset + (i * channelSize)
-		var channelTypeb = channelData1[currentChannelOffset : currentChannelOffset+2]
-		var channelType = int(binary.LittleEndian.Uint16(channelTypeb))
-		var faderValue = int(binary.LittleEndian.Uint16(channelData1[currentChannelOffset+10 : currentChannelOffset+13]))
+		var sc SavedChannel
+		sc.Offset = channelsOffset + (i * channelSize)
+		var channelTypeb = channelData1[sc.Offset : sc.Offset+2]
+		sc.Type = int(binary.LittleEndian.Uint16(channelTypeb))
+		sc.FaderValue = int(binary.LittleEndian.Uint16(channelData1[sc.Offset+10 : sc.Offset+13]))
 
-		channelNameBytes := bytes.IndexByte(channelData1[currentChannelOffset+38:currentChannelOffset+46], 0)
-		channelName := string(channelData1[currentChannelOffset+38 : currentChannelOffset+38+channelNameBytes])
+		channelNameBytes := bytes.IndexByte(channelData1[sc.Offset+38:sc.Offset+46], 0)
+		sc.Name = string(channelData1[sc.Offset+38 : sc.Offset+38+channelNameBytes])
 
-		var channelID = int(channelData1[currentChannelOffset+65])
+		sc.Id = int(channelData1[sc.Offset+65])
 
-		Scene.Channels[i] = SavedChannel{
-			Type:       channelType,
-			Id:         channelID,
-			FaderValue: faderValue,
-			Name:       channelName}
+		Scene.Channels[i] = sc
 	}
-	_ = channelData1
-	_ = channelsOffset
-	_ = channelSize
 
 	b, err := json.MarshalIndent(Scene, "", "  ")
 	if err != nil {
