@@ -231,8 +231,21 @@ func SendQUYOUUDPHeartbeat(remoteControlClient RemoteControlClient, thisMixer *M
 
 				thisMixer.outgoingHeartbeatPackets <- HeartbeatPacket{data: VUBytes, remoteControlClient: remoteControlClient}
 
-				byteArray3, _ := hex.DecodeString("7f240c03ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
-				thisMixer.outgoingHeartbeatPackets <- HeartbeatPacket{data: byteArray3, remoteControlClient: remoteControlClient}
+				otherVUMeterChannels := make([]RemoteControlVUMeter, 39)
+
+				for i := 0; i < 39; i++ {
+					otherVUMeterChannels[i].Volume = 75
+				}
+
+				heartbeatpackt2 := make([]byte, 0x30c)
+
+				byteArray3, _ := hex.DecodeString("7f240c03")
+				copy(heartbeatpackt2[:], byteArray3)
+				for i, VU := range otherVUMeterChannels {
+					copy(heartbeatpackt2[4+(20*i):], toBytes(VU))
+				}
+
+				thisMixer.outgoingHeartbeatPackets <- HeartbeatPacket{data: heartbeatpackt2, remoteControlClient: remoteControlClient}
 			}
 			counter++
 
