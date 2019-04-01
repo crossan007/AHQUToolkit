@@ -1,4 +1,11 @@
-# AHQUProxy
+# AH QU Toolkit
+A collection of tools for working with Allen and Heath QU series mixers
+
+## Scene Decoder
+Converts `.DAT` scene files saved from the mixer console into human-readable JSON.  More importantly, this provides a method for doing a side-by-side comparison of two scenes (using git, compare, or whatever your favorite diff tool is).
+
+
+## Mixer Proxy
 Mixer remote control proxy for Allen and Heath QU series mixers written in Golang
 
 As of the 1.95 firmware for the QU series mixers, there's a hard limit of 8 remote control devices (QU-You, QU-Pad, Mixing station pro).
