@@ -40,6 +40,26 @@ func hash(b []byte) uint32 {
 	h.Write(b)
 	return h.Sum32()
 }
+func decodeChannel(channelBytes []byte, offset int) SavedChannel {
+	var sc SavedChannel
+	sc.Offset = offset
+	var channelTypeb = channelBytes[0:99]
+	sc.Type = int(binary.LittleEndian.Uint16(channelTypeb))
+	sc.FaderValue = GetFaderValue(channelBytes[106:108])
+	channelNameBytes := bytes.IndexByte(channelBytes[135:143], 0)
+	sc.Name = string(channelBytes[135 : 135+channelNameBytes])
+	sc.GainValue = GetKnobValue(channelBytes[108])
+	sc.Id = int(channelBytes[162])
+	sc.RawValue = hex.EncodeToString(channelBytes)
+	sc.Compression = ChannelCompression{
+		Enabled: hex.EncodeToString(channelBytes[20:21])}
+	sc.Gate = ChannelGate{
+		Enabled: hex.EncodeToString(channelBytes[31:32])}
+	sc.EQ = ChannelEQ{
+		Enabled: hex.EncodeToString(channelBytes[5:6])}
+
+	return sc
+}
 
 func convertScene(fileName string) {
 	var channelSize = 0xC0
@@ -62,24 +82,8 @@ func convertScene(fileName string) {
 	// not really working
 
 	for i := 0; i < channelsCount; i++ {
-		var sc SavedChannel
-		sc.Offset = channelsOffset + (i * channelSize)
-		var channelTypeb = channelData1[sc.Offset : sc.Offset+99]
-		sc.Type = int(binary.LittleEndian.Uint16(channelTypeb))
-		sc.FaderValue = GetFaderValue(channelData1[sc.Offset+106 : sc.Offset+108])
-		channelNameBytes := bytes.IndexByte(channelData1[sc.Offset+135:sc.Offset+143], 0)
-		sc.Name = string(channelData1[sc.Offset+135 : sc.Offset+135+channelNameBytes])
-		sc.GainValue = GetKnobValue(channelData1[sc.Offset+108])
-		sc.Id = int(channelData1[sc.Offset+162])
-		sc.RawValue = hex.EncodeToString(channelData1[sc.Offset : sc.Offset+channelSize])
-		sc.Compression = ChannelCompression{
-			Enabled: hex.EncodeToString(channelData1[sc.Offset+20 : sc.Offset+21])}
-		sc.Gate = ChannelGate{
-			Enabled: hex.EncodeToString(channelData1[sc.Offset+31 : sc.Offset+32])}
-		sc.EQ = ChannelEQ{
-			Enabled: hex.EncodeToString(channelData1[sc.Offset+5 : sc.Offset+6])}
-
-		Scene.Channels[i] = sc
+		var offset = channelsOffset + (i * channelSize)
+		Scene.Channels[i] = decodeChannel(channelData1[offset:offset+channelSize], offset)
 	}
 
 	var routesCount = 1180
