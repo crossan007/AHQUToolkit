@@ -1,6 +1,10 @@
 package main
 
 type Scene struct {
-	Name     string
-	Channels []SavedChannel
+	Id        int
+	Name      string
+	Checksum1 string
+	Checksum2 string
+	Routes    []Route
+	Channels  []SavedChannel
 }
