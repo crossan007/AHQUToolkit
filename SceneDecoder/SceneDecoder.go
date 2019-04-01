@@ -32,6 +32,7 @@ func main() {
 		}
 
 	}
+	log.Println("Done converting all files")
 }
 
 func hash(b []byte) uint32 {
@@ -42,7 +43,7 @@ func hash(b []byte) uint32 {
 
 func convertScene(fileName string) {
 	var channelSize = 0xC0
-	var channelsOffset = 0xA6
+	var channelsOffset = 0x45
 	var channelsCount = 60
 	var Scene Scene
 
@@ -63,15 +64,20 @@ func convertScene(fileName string) {
 	for i := 0; i < channelsCount; i++ {
 		var sc SavedChannel
 		sc.Offset = channelsOffset + (i * channelSize)
-		var channelTypeb = channelData1[sc.Offset : sc.Offset+2]
+		var channelTypeb = channelData1[sc.Offset : sc.Offset+99]
 		sc.Type = int(binary.LittleEndian.Uint16(channelTypeb))
-		sc.FaderValue = GetFaderValue(channelData1[sc.Offset+10 : sc.Offset+13])
-
-		channelNameBytes := bytes.IndexByte(channelData1[sc.Offset+38:sc.Offset+46], 0)
-		sc.Name = string(channelData1[sc.Offset+38 : sc.Offset+38+channelNameBytes])
-
-		sc.Id = int(channelData1[sc.Offset+65])
+		sc.FaderValue = GetFaderValue(channelData1[sc.Offset+106 : sc.Offset+108])
+		channelNameBytes := bytes.IndexByte(channelData1[sc.Offset+135:sc.Offset+143], 0)
+		sc.Name = string(channelData1[sc.Offset+135 : sc.Offset+135+channelNameBytes])
+		sc.GainValue = GetKnobValue(channelData1[sc.Offset+108])
+		sc.Id = int(channelData1[sc.Offset+162])
 		sc.RawValue = hex.EncodeToString(channelData1[sc.Offset : sc.Offset+channelSize])
+		sc.Compression = ChannelCompression{
+			Enabled: hex.EncodeToString(channelData1[sc.Offset+20 : sc.Offset+21])}
+		sc.Gate = ChannelGate{
+			Enabled: hex.EncodeToString(channelData1[sc.Offset+31 : sc.Offset+32])}
+		sc.EQ = ChannelEQ{
+			Enabled: hex.EncodeToString(channelData1[sc.Offset+5 : sc.Offset+6])}
 
 		Scene.Channels[i] = sc
 	}
@@ -88,7 +94,7 @@ func convertScene(fileName string) {
 		r.Offset = routesOffsetBegin + i*routeLength
 		r.RawValue = hex.EncodeToString(channelData1[r.Offset : r.Offset+8])
 		r.FaderValue = GetFaderValue(channelData1[r.Offset : r.Offset+3])
-		r.Enabled = channelData1[r.Offset+4] == 0x01
+		r.Enabled = channelData1[r.Offset+5] == 0x01
 		if channelData1[r.Offset+4] == 0x01 {
 			r.PreOrPost = "Pre"
 		} else {
