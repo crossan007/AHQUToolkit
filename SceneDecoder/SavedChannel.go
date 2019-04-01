@@ -14,13 +14,16 @@ type SavedChannel struct {
 }
 
 type ChannelEQ struct {
-	Enabled string
+	Enabled  string
+	RawBytes string
 }
 
 type ChannelGate struct {
-	Enabled string
+	Enabled  string
+	RawBytes string
 }
 
 type ChannelCompression struct {
-	Enabled string
+	Enabled  string
+	RawBytes string
 }

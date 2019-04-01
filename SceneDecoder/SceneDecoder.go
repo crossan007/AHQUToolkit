@@ -43,27 +43,28 @@ func hash(b []byte) uint32 {
 func decodeChannel(channelBytes []byte, offset int) SavedChannel {
 	var sc SavedChannel
 	sc.Offset = offset
-	var channelTypeb = channelBytes[0:99]
+	var channelTypeb = channelBytes[0:114]
 	sc.Type = int(binary.LittleEndian.Uint16(channelTypeb))
-	sc.FaderValue = GetFaderValue(channelBytes[106:108])
-	channelNameBytes := bytes.IndexByte(channelBytes[135:143], 0)
-	sc.Name = string(channelBytes[135 : 135+channelNameBytes])
-	sc.GainValue = GetKnobValue(channelBytes[108])
-	sc.Id = int(channelBytes[162])
+	sc.FaderValue = GetFaderValue(channelBytes[121:123])
+	channelNameBytes := bytes.IndexByte(channelBytes[0x9C:0xA4], 0)
+	sc.Name = string(channelBytes[0x9C : 0x9C+channelNameBytes])
+	sc.GainValue = GetKnobValue(channelBytes[0x81])
+	sc.Id = int(channelBytes[177])
 	sc.RawValue = hex.EncodeToString(channelBytes)
-	sc.Compression = ChannelCompression{
-		Enabled: hex.EncodeToString(channelBytes[20:21])}
-	sc.Gate = ChannelGate{
-		Enabled: hex.EncodeToString(channelBytes[31:32])}
 	sc.EQ = ChannelEQ{
-		Enabled: hex.EncodeToString(channelBytes[5:6])}
+		Enabled:  hex.EncodeToString(channelBytes[0x1A:0x1B]),
+		RawBytes: hex.EncodeToString(channelBytes[0x00:0x1A])}
+	sc.Compression = ChannelCompression{
+		Enabled: hex.EncodeToString(channelBytes[0x29:0x2A])}
+	sc.Gate = ChannelGate{
+		Enabled: hex.EncodeToString(channelBytes[0x34:0x35])}
 
 	return sc
 }
 
 func convertScene(fileName string) {
 	var channelSize = 0xC0
-	var channelsOffset = 0x45
+	var channelsOffset = 0x30
 	var channelsCount = 60
 	var Scene Scene
 
