@@ -40,16 +40,15 @@ func hash(b []byte) uint32 {
 	h.Write(b)
 	return h.Sum32()
 }
-func decodeChannel(channelBytes []byte, offset int) SavedChannel {
+func decodeChannel(channelBytes []byte) SavedChannel {
 	var sc SavedChannel
-	sc.Offset = offset
 	var channelTypeb = channelBytes[0:114]
 	sc.Type = int(binary.LittleEndian.Uint16(channelTypeb))
 	sc.FaderValue = GetFaderValue(channelBytes[121:123])
 	channelNameBytes := bytes.IndexByte(channelBytes[0x9C:0xA4], 0)
-	sc.Name = string(channelBytes[0x9C : 0x9C+channelNameBytes])
+	sc.DisplayName = string(channelBytes[0x9C : 0x9C+channelNameBytes])
 	sc.GainValue = GetKnobValue(channelBytes[0x81])
-	sc.Id = int(channelBytes[177])
+	sc.Id = int(channelBytes[0xB7])
 	sc.RawValue = hex.EncodeToString(channelBytes)
 	sc.EQ = ChannelEQ{
 		Enabled:  hex.EncodeToString(channelBytes[0x1A:0x1B]),
@@ -58,6 +57,7 @@ func decodeChannel(channelBytes []byte, offset int) SavedChannel {
 		Enabled: hex.EncodeToString(channelBytes[0x29:0x2A])}
 	sc.Gate = ChannelGate{
 		Enabled: hex.EncodeToString(channelBytes[0x34:0x35])}
+	sc.SendToMainFader = GetFaderValue(channelBytes[0x7e:0x80])
 
 	return sc
 }
@@ -84,8 +84,27 @@ func convertScene(fileName string) {
 
 	for i := 0; i < channelsCount; i++ {
 		var offset = channelsOffset + (i * channelSize)
-		Scene.Channels[i] = decodeChannel(channelData1[offset:offset+channelSize], offset)
+		var sc = decodeChannel(channelData1[offset : offset+channelSize])
+		sc.Offset = offset
+		sc.Index = i
+		if i < 32 {
+			sc.PhysicalName = "Channel " + strconv.Itoa(i+1)
+		}
+		Scene.Channels[i] = sc
 	}
+	Scene.Channels[32].PhysicalName = "ST1LR"
+	Scene.Channels[33].PhysicalName = "ST2LR"
+	Scene.Channels[34].PhysicalName = "ST3LR"
+
+	Scene.Channels[35].PhysicalName = "Fx1RetLR"
+	Scene.Channels[36].PhysicalName = "Fx2RetLR"
+	Scene.Channels[37].PhysicalName = "Fx3RetLR"
+	Scene.Channels[38].PhysicalName = "Fx4RetLR"
+	//BEGIN GUESS
+	Scene.Channels[39].PhysicalName = "Mix4"
+	Scene.Channels[47].PhysicalName = "Mix5"
+	Scene.Channels[42].PhysicalName = "Mix7"
+	//END GUESS
 
 	var routesCount = 1180
 	var routesOffsetBegin = 0x2E60
@@ -107,6 +126,13 @@ func convertScene(fileName string) {
 		}
 		Scene.Routes[i] = r
 	}
+
+	// BEGIN GUESS - 75% sure
+	Scene.Routes[140].Name = "Channel 8 to Mix 1"
+	Scene.Routes[300].Name = "Channel 16 to Mix 1"
+	Scene.Routes[460].Name = "Channel 24 to Mix 1"
+	Scene.Routes[620].Name = "Channel 32 to Mix 1"
+	// END GUESS
 
 	b, err := json.MarshalIndent(Scene, "", "  ")
 	if err != nil {

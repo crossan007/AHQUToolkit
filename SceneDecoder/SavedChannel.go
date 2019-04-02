@@ -1,16 +1,19 @@
 package main
 
 type SavedChannel struct {
-	Offset      int
-	Type        int
-	Id          int
-	Name        string
-	GainValue   KnobValue
-	FaderValue  FaderValue
-	RawValue    string
-	EQ          ChannelEQ
-	Gate        ChannelGate
-	Compression ChannelCompression
+	Index           int
+	Offset          int
+	Id              int
+	Type            int
+	PhysicalName    string
+	DisplayName     string
+	GainValue       KnobValue
+	FaderValue      FaderValue
+	RawValue        string
+	EQ              ChannelEQ
+	Gate            ChannelGate
+	Compression     ChannelCompression
+	SendToMainFader FaderValue
 }
 
 type ChannelEQ struct {
