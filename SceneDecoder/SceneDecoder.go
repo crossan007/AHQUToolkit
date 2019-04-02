@@ -100,10 +100,12 @@ func convertScene(fileName string) {
 	Scene.Channels[36].PhysicalName = "Fx2RetLR"
 	Scene.Channels[37].PhysicalName = "Fx3RetLR"
 	Scene.Channels[38].PhysicalName = "Fx4RetLR"
+
 	//BEGIN GUESS
-	Scene.Channels[39].PhysicalName = "Mix4"
-	Scene.Channels[47].PhysicalName = "Mix5"
-	Scene.Channels[42].PhysicalName = "Mix7"
+	Scene.Channels[47].PhysicalName = "GroupMix1-2"
+	Scene.Channels[48].PhysicalName = "GroupMix3-4"
+	Scene.Channels[49].PhysicalName = "GroupMix5-6"
+	Scene.Channels[50].PhysicalName = "GroupMix7-8"
 	//END GUESS
 
 	var routesCount = 1180
@@ -126,7 +128,17 @@ func convertScene(fileName string) {
 		}
 		Scene.Routes[i] = r
 	}
-
+	Scene.Routes[0].Name = "Channel 1 to Mix 1"
+	Scene.Routes[1].Name = "Channel 1 to Mix 2"
+	Scene.Routes[2].Name = "Channel 1 to Mix 3"
+	Scene.Routes[3].Name = "Channel 1 to Mix 4"
+	Scene.Routes[4].Name = "Channel 1 to Mix 5-6"
+	Scene.Routes[5].Name = "Channel 1 to Mix 7-8"
+	Scene.Routes[6].Name = "Channel 1 to Mix 9-10"
+	Scene.Routes[8].Name = "Channel 1 to GroupMix 1-2"
+	Scene.Routes[9].Name = "Channel 1 to GroupMix 3-4"
+	Scene.Routes[10].Name = "Channel 1 to GroupMix 5-6"
+	Scene.Routes[11].Name = "Channel 1 to GroupMix 7-8"
 	// BEGIN GUESS - 75% sure
 	Scene.Routes[140].Name = "Channel 8 to Mix 1"
 	Scene.Routes[300].Name = "Channel 16 to Mix 1"
