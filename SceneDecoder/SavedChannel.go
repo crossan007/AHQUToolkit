@@ -22,8 +22,13 @@ type ChannelEQ struct {
 }
 
 type ChannelGate struct {
-	Enabled  string
-	RawBytes string
+	Enabled   string
+	Threshold KnobValue
+	Depth     KnobValue
+	Attack    FaderValue
+	Release   KnobValue
+	Hold      KnobValue
+	RawBytes  string
 }
 
 type ChannelCompression struct {

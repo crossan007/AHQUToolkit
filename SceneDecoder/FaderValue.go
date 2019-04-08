@@ -16,5 +16,5 @@ func GetFaderValue(bytes []byte) FaderValue {
 	return FaderValue{
 		RawBytes:     hex.EncodeToString(bytes),
 		IntValue:     int(binary.LittleEndian.Uint16(bytes)),
-		PercentValue: (float32(intV) / 32768) * 100}
+		PercentValue: (float32(intV) / 35328) * 100}
 }

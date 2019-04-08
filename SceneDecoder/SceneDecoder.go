@@ -56,7 +56,11 @@ func decodeChannel(channelBytes []byte) SavedChannel {
 	sc.Compression = ChannelCompression{
 		Enabled: hex.EncodeToString(channelBytes[0x29:0x2A])}
 	sc.Gate = ChannelGate{
-		Enabled: hex.EncodeToString(channelBytes[0x34:0x35])}
+		Enabled:   hex.EncodeToString(channelBytes[0x34:0x35]),
+		Threshold: GetKnobValue(channelBytes[0x2A+7]),
+		Depth:     GetKnobValue(channelBytes[0x2A+9]),
+		Attack:    GetFaderValue(channelBytes[0x2A:(0x2A + 4)]),
+		RawBytes:  hex.EncodeToString(channelBytes[0x2A:0x34])}
 	sc.SendToMainFader = GetFaderValue(channelBytes[0x7e:0x80])
 
 	return sc
@@ -119,7 +123,7 @@ func convertScene(fileName string) {
 		r.Id = i
 		r.Offset = routesOffsetBegin + i*routeLength
 		r.RawValue = hex.EncodeToString(channelData1[r.Offset : r.Offset+8])
-		r.FaderValue = GetFaderValue(channelData1[r.Offset : r.Offset+3])
+		r.FaderValue = GetFaderValue(channelData1[r.Offset : r.Offset+2])
 		r.Enabled = channelData1[r.Offset+5] == 0x01
 		if channelData1[r.Offset+4] == 0x01 {
 			r.PreOrPost = "Pre"
