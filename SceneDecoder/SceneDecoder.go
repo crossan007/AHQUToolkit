@@ -77,7 +77,11 @@ func convertScene(fileName string) {
 
 	channelData1, _ := ioutil.ReadFile(fileName)
 
-	Scene.Name = string(channelData1[12:23])
+	sceneNameBytes := bytes.IndexByte(channelData1[12:23], 0)
+	if sceneNameBytes == -1 {
+		sceneNameBytes = 11
+	}
+	Scene.Name = string(channelData1[12 : 12+sceneNameBytes])
 	Scene.Id = int(channelData1[3])
 
 	// Take a few gesses at this being a hashing algo?
@@ -155,5 +159,5 @@ func convertScene(fileName string) {
 		fmt.Println(err)
 		return
 	}
-	_ = ioutil.WriteFile(fileName+".json", b[:], 0644)
+	_ = ioutil.WriteFile(fileName+"-"+Scene.Name+".json", b[:], 0644)
 }
