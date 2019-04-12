@@ -17,8 +17,9 @@ type SavedChannel struct {
 }
 
 type ChannelEQ struct {
-	Enabled  string
-	RawBytes string
+	Enabled        string
+	HighPassFilter FaderValue
+	RawBytes       string
 }
 
 type ChannelGate struct {

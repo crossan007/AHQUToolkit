@@ -51,8 +51,9 @@ func decodeChannel(channelBytes []byte) SavedChannel {
 	sc.Id = int(channelBytes[0xB7])
 	sc.RawValue = hex.EncodeToString(channelBytes)
 	sc.EQ = ChannelEQ{
-		Enabled:  hex.EncodeToString(channelBytes[0x1A:0x1B]),
-		RawBytes: hex.EncodeToString(channelBytes[0x00:0x1A])}
+		Enabled:        hex.EncodeToString(channelBytes[0x1A:0x1B]),
+		RawBytes:       hex.EncodeToString(channelBytes[0x00:0x1A]),
+		HighPassFilter: GetFaderValue(channelBytes[0x76:0x78])}
 	sc.Compression = ChannelCompression{
 		Enabled: hex.EncodeToString(channelBytes[0x29:0x2A])}
 	sc.Gate = ChannelGate{
@@ -62,7 +63,7 @@ func decodeChannel(channelBytes []byte) SavedChannel {
 		Attack:    GetFaderValue(channelBytes[0x2A:(0x2A + 4)]),
 		RawBytes:  hex.EncodeToString(channelBytes[0x2A:0x34])}
 	sc.SendToMainFader = GetFaderValue(channelBytes[0x7e:0x80])
-
+	log.Println("Converted channel: " + strconv.Itoa(sc.Id))
 	return sc
 }
 
