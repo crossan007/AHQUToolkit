@@ -52,8 +52,12 @@ func decodeChannel(channelBytes []byte) SavedChannel {
 	sc.RawValue = hex.EncodeToString(channelBytes)
 	sc.EQ = ChannelEQ{
 		Enabled:        hex.EncodeToString(channelBytes[0x1A:0x1B]),
-		RawBytes:       hex.EncodeToString(channelBytes[0x00:0x1A]),
-		HighPassFilter: GetFaderValue(channelBytes[0x76:0x78])}
+		RawBytes:       hex.EncodeToString(channelBytes[0x00:0x78]),
+		HighPassFilter: GetFaderValue(channelBytes[0x76:0x78]),
+		Band1:          GetEQBand(channelBytes[0x00:0x06]),
+		Band2:          GetEQBand(channelBytes[0x06:0x0c]),
+		Band3:          GetEQBand(channelBytes[0x0c:0x12]),
+		Band4:          GetEQBand(channelBytes[0x12:0x18])}
 	sc.Compression = ChannelCompression{
 		Enabled: hex.EncodeToString(channelBytes[0x29:0x2A])}
 	sc.Gate = ChannelGate{

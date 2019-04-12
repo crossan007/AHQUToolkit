@@ -19,6 +19,10 @@ type SavedChannel struct {
 type ChannelEQ struct {
 	Enabled        string
 	HighPassFilter FaderValue
+	Band1          EQBand
+	Band2          EQBand
+	Band3          EQBand
+	Band4          EQBand
 	RawBytes       string
 }
 
